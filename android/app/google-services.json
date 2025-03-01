@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "481620385308",
+    "project_id": "eulaiqapp",
+    "storage_bucket": "eulaiqapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:481620385308:android:92bef593d32a2cc10409d9",
+        "android_client_info": {
+          "package_name": "com.eulaiq.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "481620385308-h042g0r2ium0uukgjsasdebfv2vh7u24.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.eulaiq.app",
+            "certificate_hash": "7da79de3a6611e499d94bd92afffd7454c0f19bb"
+          }
+        },
+        {
+          "client_id": "481620385308-50k8v2a7idv5e9hdjrujgdgg5ltcqqbj.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnfV32Pa3WM-hI9Cf_uKdL9F_tzFpKq8Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "481620385308-50k8v2a7idv5e9hdjrujgdgg5ltcqqbj.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

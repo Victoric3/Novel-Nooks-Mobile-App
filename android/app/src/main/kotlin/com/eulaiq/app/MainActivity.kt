@@ -1,4 +1,4 @@
-package com.example.eulaiq
+package com.eulaiq.app
 
 import io.flutter.embedding.android.FlutterActivity
 

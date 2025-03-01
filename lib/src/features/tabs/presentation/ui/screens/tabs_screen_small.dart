@@ -13,6 +13,7 @@ class TabsScreenSmall extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return AutoTabsRouter(
       routes: const [
@@ -36,27 +37,60 @@ class TabsScreenSmall extends ConsumerWidget {
               filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.bottomNavigationBarTheme.backgroundColor?.withOpacity(0.8),
+                  // Consistent color with app theme
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? [
+                            AppColors.darkBg.withOpacity(0.85),
+                            AppColors.darkBg.withOpacity(0.95),
+                          ]
+                        : [
+                            Colors.white.withOpacity(0.85),
+                            Colors.white.withOpacity(0.95),
+                          ],
+                  ),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
+                  // Subtle top border for definition
+                  border: Border(
+                    top: BorderSide(
+                      color: isDark
+                          ? AppColors.neonCyan.withOpacity(0.1)
+                          : AppColors.brandDeepGold.withOpacity(0.1),
+                      width: 0.5,
+                    ),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 5,
+                      offset: const Offset(0, -2),
+                    )
+                  ],
                 ),
                 child: BottomNavigationBar(
                   elevation: 0,
                   backgroundColor: Colors.transparent,
                   type: BottomNavigationBarType.fixed,
-                  selectedItemColor: theme.bottomNavigationBarTheme.selectedItemColor,
-                  unselectedItemColor: theme.bottomNavigationBarTheme.unselectedItemColor,
+                  selectedItemColor: isDark 
+                    ? AppColors.neonCyan 
+                    : AppColors.brandDeepGold,
+                  unselectedItemColor: isDark
+                    ? Colors.white.withOpacity(0.5)
+                    : AppColors.neutralDarkGray.withOpacity(0.5),
                   showUnselectedLabels: true,
-                  selectedFontSize: 12,
-                  unselectedFontSize: 12,
+                  selectedFontSize: 11,
+                  unselectedFontSize: 11,
                   items: <BottomNavigationBarItem>[
-                    _buildNavItem(MdiIcons.homeVariant, 'Home', tabsRouter.activeIndex == 0),
-                    _buildNavItem(MdiIcons.bookshelf, 'Library', tabsRouter.activeIndex == 1),
-                    _buildNavItem(MdiIcons.plusCircle, 'Create', tabsRouter.activeIndex == 2, isCreate: true),
-                    _buildNavItem(MdiIcons.calendarText, 'Schedule', tabsRouter.activeIndex == 3),
-                    _buildNavItem(MdiIcons.accountGroup, 'Community', tabsRouter.activeIndex == 4),
+                    _buildNavItem(MdiIcons.homeVariant, 'Home', tabsRouter.activeIndex == 0, isDark),
+                    _buildNavItem(MdiIcons.bookshelf, 'Library', tabsRouter.activeIndex == 1, isDark),
+                    _buildNavItem(MdiIcons.plusCircle, 'Create', tabsRouter.activeIndex == 2, isDark, isCreate: true),
+                    _buildNavItem(MdiIcons.calendarText, 'Schedule', tabsRouter.activeIndex == 3, isDark),
+                    _buildNavItem(MdiIcons.accountGroup, 'Community', tabsRouter.activeIndex == 4, isDark),
                   ],
                   currentIndex: tabsRouter.activeIndex,
                   onTap: tabsRouter.setActiveIndex,
@@ -69,7 +103,7 @@ class TabsScreenSmall extends ConsumerWidget {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label, bool isActive, {bool isCreate = false}) {
+  BottomNavigationBarItem _buildNavItem(IconData icon, String label, bool isActive, bool isDark, {bool isCreate = false}) {
     return BottomNavigationBarItem(
       icon: Container(
         height: 32,
@@ -78,24 +112,37 @@ class TabsScreenSmall extends ConsumerWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: isCreate ? BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.neonCyan, AppColors.neonPurple],
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [AppColors.neonCyan, AppColors.neonPurple]
+                  : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.neonCyan.withOpacity(0.3),
+                color: isDark 
+                  ? AppColors.neonCyan.withOpacity(0.3)
+                  : AppColors.brandDeepGold.withOpacity(0.3),
                 blurRadius: 8,
                 spreadRadius: 2,
               ),
             ],
+          ) : isActive ? BoxDecoration(
+            color: isDark
+                ? AppColors.neonCyan.withOpacity(0.15)
+                : AppColors.brandDeepGold.withOpacity(0.15),
+            shape: BoxShape.circle,
           ) : null,
           child: Icon(
             icon,
-            size: isActive ? 26 : 22,
-            color: isCreate ? Colors.white : null,
+            size: isActive ? 24 : 20,
+            color: isCreate 
+                ? Colors.white
+                : isActive
+                    ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                    : null,
           ),
         ),
       ),

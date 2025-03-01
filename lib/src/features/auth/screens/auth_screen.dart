@@ -1,5 +1,7 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:eulaiq/src/common/constants/global_state.dart';
 import 'package:eulaiq/src/common/theme/app_theme.dart';
+import 'package:eulaiq/src/features/auth/blocs/auth_handler.dart';
 import 'package:flutter/material.dart';
 import 'package:eulaiq/src/common/common.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -157,29 +159,46 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     child: Column(
                       children: [
                         _AuthButton(
-                          icon: Icons.mail_outline,
+                          icon: Icons.alternate_email_rounded, // More modern email icon
                           label: 'Sign in with Email',
                           onPressed: () => context.router.push(SignInRoute()),
                           isDark: isDark,
                         ),
                         const SizedBox(height: 16),
                         _AuthButton(
-                          icon: Icons.g_mobiledata_rounded,
+                          icon: Icons.email, // Default icon (won't be shown due to iconWidget)
+                          // Custom Google icon with better styling
+                          iconWidget: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Image.asset(
+                              'assets/icons/google-icon.png',
+                              height: 20,
+                              width: 20,
+                            ),
+                          ),
                           label: 'Continue with Google',
                           onPressed: () {
-                            // Implement Google Sign In
+                            final signInState = ref.read(signInProvider);
+                            signInState.signInWithGoogle(context, ref);
                           },
                           isDark: isDark,
+                          isLoading: ref.watch(googleSignInLoadingProvider), // Updated
                         ),
                         const SizedBox(height: 16),
                         _AuthButton(
-                          icon: Icons.person_outline,
+                          icon: Icons.explore_outlined, // More inviting guest icon
                           label: 'Continue as Guest',
                           onPressed: () {
-                            // Implement Guest Sign In
+                            final signInState = ref.read(signInProvider);
+                            signInState.continueAsGuest(context, ref);
                           },
                           isDark: isDark,
                           isOutlined: true,
+                          isLoading: ref.watch(guestSignInLoadingProvider), // Updated
                         ),
                         const SizedBox(height: 24),
                         RichText(
@@ -221,56 +240,89 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
 
 class _AuthButton extends StatelessWidget {
   final IconData icon;
+  final Widget? iconWidget; // Add support for custom icon widgets
   final String label;
   final VoidCallback onPressed;
   final bool isDark;
   final bool isOutlined;
+  final bool isLoading;
 
   const _AuthButton({
     required this.icon,
+    this.iconWidget,
     required this.label,
     required this.onPressed,
     required this.isDark,
     this.isOutlined = false,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return Container(
       width: double.infinity,
-      height: 50,
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: !isOutlined
+            ? LinearGradient(
+                colors: isDark
+                    ? [AppColors.neonCyan, AppColors.neonPurple]
+                    : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
+              )
+            : null,
+        border: isOutlined
+            ? Border.all(
+                color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                width: 2,
+              )
+            : null,
+        borderRadius: BorderRadius.circular(28),
+      ),
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isOutlined 
-              ? Colors.transparent
-              : isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-          foregroundColor: isOutlined
-              ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-              : isDark ? AppColors.darkBg : Colors.white,
-          elevation: isOutlined ? 0 : 2,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(25),
-            side: BorderSide(
-              color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-              width: isOutlined ? 2 : 0,
-            ),
+            borderRadius: BorderRadius.circular(28),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon),
-            const SizedBox(width: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+        child: isLoading
+            ? SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                  ),
+                  strokeWidth: 2,
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Use custom icon widget if provided, otherwise use icon
+                  iconWidget ??
+                      Icon(
+                        icon,
+                        size: 24, // Slightly larger icons
+                        color: isOutlined
+                            ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                            : (isDark ? AppColors.darkBg : Colors.white),
+                      ),
+                  const SizedBox(width: 12),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600, // Slightly bolder text
+                      color: isOutlined
+                          ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                          : (isDark ? AppColors.darkBg : Colors.white),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
       ),
     );
   }

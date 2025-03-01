@@ -25,7 +25,7 @@ class DioConfig {
 
     dio = Dio(
       BaseOptions(
-        baseUrl: baseURL,
+        baseUrl: "$baseURL/$serverVersion",
       ),
     );
     dio?.interceptors.add(CookieManager(cookieJar));

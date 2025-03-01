@@ -14,11 +14,10 @@ class SignUpScreen extends ConsumerStatefulWidget {
   ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends ConsumerState<SignUpScreen> 
+class _SignUpScreenState extends ConsumerState<SignUpScreen>
     with SingleTickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
   late AnimationController _fadeController;
-  bool _passwordVisible = false;
 
   @override
   void initState() {
@@ -39,7 +38,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
   Widget build(BuildContext context) {
     final signInState = ref.watch(signInProvider);
     final isLoading = ref.watch(loadingProvider);
-    final errorMessage = ref.watch(errorProvider);
+    ref.watch(errorProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
@@ -57,14 +56,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: isDark ? AppColors.neonCyan.withOpacity(0.3) : AppColors.brandDeepGold.withOpacity(0.3),
+                      color:
+                          isDark
+                              ? AppColors.neonCyan.withOpacity(0.3)
+                              : AppColors.brandDeepGold.withOpacity(0.3),
                     ),
                   ),
                   child: IconButton(
                     icon: Icon(
                       Icons.arrow_back_ios_new,
                       size: 18,
-                      color: isDark ? AppColors.textPrimary : AppColors.textDark,
+                      color:
+                          isDark ? AppColors.textPrimary : AppColors.textDark,
                     ),
                     onPressed: () => context.router.pop(),
                   ),
@@ -73,11 +76,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
 
                 // Header with gradient
                 ShaderMask(
-                  shaderCallback: (bounds) => LinearGradient(
-                    colors: isDark 
-                        ? [AppColors.neonCyan, AppColors.neonPurple]
-                        : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
-                  ).createShader(bounds),
+                  shaderCallback:
+                      (bounds) => LinearGradient(
+                        colors:
+                            isDark
+                                ? [AppColors.neonCyan, AppColors.neonPurple]
+                                : [
+                                  AppColors.brandDeepGold,
+                                  AppColors.brandWarmOrange,
+                                ],
+                      ).createShader(bounds),
                   child: Text(
                     'Create Account',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -90,7 +98,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                 Text(
                   'Start your medical learning journey',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: isDark ? AppColors.textPrimary.withOpacity(0.7) : AppColors.neutralDarkGray,
+                    color:
+                        isDark
+                            ? AppColors.textPrimary.withOpacity(0.7)
+                            : AppColors.neutralDarkGray,
                   ),
                 ),
                 SizedBox(height: size.height * 0.06),
@@ -100,13 +111,31 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                   key: formKey,
                   child: Column(
                     children: [
-                      // Name Field
+                      // First Name Field
                       _GradientBorderField(
-                        label: 'Full Name',
-                        onChanged: (value) => signInState.collectFormData(value, 'name'),
+                        label: 'First Name',
+                        onChanged:
+                            (value) =>
+                                signInState.collectFormData(value, 'firstname'),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your name';
+                            return 'Please enter your first name';
+                          }
+                          return null;
+                        },
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Last Name Field
+                      _GradientBorderField(
+                        label: 'Last Name',
+                        onChanged:
+                            (value) =>
+                                signInState.collectFormData(value, 'lastname'),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your last name';
                           }
                           return null;
                         },
@@ -118,7 +147,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                       _GradientBorderField(
                         label: 'Email',
                         keyboardType: TextInputType.emailAddress,
-                        onChanged: (value) => signInState.collectFormData(value, 'email'),
+                        onChanged:
+                            (value) => signInState.validateForm(value, 'email'),
                         validator: (value) {
                           if (!signInState.emailRegExp.hasMatch(value!)) {
                             return 'Please enter a valid email';
@@ -133,9 +163,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                       _GradientBorderField(
                         label: 'Password',
                         isPassword: true,
-                        passwordVisible: _passwordVisible,
-                        onTogglePassword: () => setState(() => _passwordVisible = !_passwordVisible),
-                        onChanged: (value) => signInState.collectFormData(value, 'password'),
+                        passwordVisible: signInState.passwordVisibility,
+                        onTogglePassword: signInState.togglePasswordVisibility,
+                        onChanged:
+                            (value) =>
+                                signInState.validateForm(value, 'password'),
                         validator: (value) {
                           if (value!.length < 6) {
                             return 'Password must be at least 6 characters';
@@ -144,22 +176,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                         },
                         isDark: isDark,
                       ),
-                      if (errorMessage != null) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          errorMessage,
-                          style: TextStyle(color: Colors.red.shade400),
-                        ),
-                      ],
                       SizedBox(height: size.height * 0.06),
 
                       // Sign Up Button
                       _GradientButton(
-                        onPressed: isLoading ? null : () {
-                          if (formKey.currentState!.validate()) {
-                            signInState.signUp(context, ref);
-                          }
-                        },
+                        onPressed:
+                            isLoading || !signInState.continueButtonEnabled
+                                ? null
+                                : () {
+                                  if (formKey.currentState!.validate()) {
+                                    signInState.signUp(context, ref);
+                                  }
+                                },
                         isLoading: isLoading,
                         label: 'Create Account',
                         isDark: isDark,
@@ -171,18 +199,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                         child: RichText(
                           text: TextSpan(
                             style: TextStyle(
-                              color: isDark ? AppColors.textPrimary : AppColors.textDark,
+                              color:
+                                  isDark
+                                      ? AppColors.textPrimary
+                                      : AppColors.textDark,
                               fontSize: 16,
                             ),
                             children: [
                               const TextSpan(text: 'Already have an account? '),
                               WidgetSpan(
                                 child: GestureDetector(
-                                  onTap: () => context.router.push(SignInRoute()),
+                                  onTap:
+                                      () => context.router.push(SignInRoute()),
                                   child: Text(
                                     'Sign in',
                                     style: TextStyle(
-                                      color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                                      color:
+                                          isDark
+                                              ? AppColors.neonCyan
+                                              : AppColors.brandDeepGold,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -231,12 +266,18 @@ class _GradientBorderField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: isDark ? AppColors.textPrimary.withOpacity(0.7) : AppColors.neutralDarkGray,
+          color:
+              isDark
+                  ? AppColors.textPrimary.withOpacity(0.7)
+                  : AppColors.neutralDarkGray,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(
-            color: isDark ? AppColors.neonCyan.withOpacity(0.3) : AppColors.brandDeepGold.withOpacity(0.3),
+            color:
+                isDark
+                    ? AppColors.neonCyan.withOpacity(0.3)
+                    : AppColors.brandDeepGold.withOpacity(0.3),
           ),
         ),
         focusedBorder: OutlineInputBorder(
@@ -245,15 +286,17 @@ class _GradientBorderField extends StatelessWidget {
             color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
           ),
         ),
-        suffixIcon: isPassword
-            ? IconButton(
-                icon: Icon(
-                  passwordVisible! ? Icons.visibility : Icons.visibility_off,
-                  color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                ),
-                onPressed: onTogglePassword,
-              )
-            : null,
+        suffixIcon:
+            isPassword
+                ? IconButton(
+                  icon: Icon(
+                    passwordVisible! ? Icons.visibility : Icons.visibility_off,
+                    color:
+                        isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                  ),
+                  onPressed: onTogglePassword,
+                )
+                : null,
       ),
       obscureText: isPassword && !passwordVisible!,
       keyboardType: keyboardType,
@@ -286,14 +329,16 @@ class _GradientButton extends StatelessWidget {
       height: 56,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: isDark 
-              ? [AppColors.neonCyan, AppColors.neonPurple]
-              : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
+          colors:
+              isDark
+                  ? [AppColors.neonCyan, AppColors.neonPurple]
+                  : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold).withOpacity(0.3),
+            color: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                .withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -308,25 +353,26 @@ class _GradientButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(28),
           ),
         ),
-        child: isLoading
-            ? SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isDark ? AppColors.darkBg : Colors.white,
+        child:
+            isLoading
+                ? SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isDark ? AppColors.darkBg : Colors.white,
+                    ),
+                    strokeWidth: 2,
                   ),
-                  strokeWidth: 2,
+                )
+                : Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkBg : Colors.white,
+                  ),
                 ),
-              )
-            : Text(
-                label,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? AppColors.darkBg : Colors.white,
-                ),
-              ),
       ),
     );
   }

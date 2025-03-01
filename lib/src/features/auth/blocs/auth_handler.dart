@@ -1,10 +1,14 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
+import 'package:eulaiq/src/common/providers/device_info_provider.dart';
+import 'package:eulaiq/src/common/services/google_auth_service.dart';
+import 'package:eulaiq/src/common/services/notification_service.dart';
+import 'package:eulaiq/src/common/widgets/notification_card.dart';
+import 'package:eulaiq/src/features/auth/blocs/verify_code.dart';
 import 'package:flutter/material.dart';
 import 'package:eulaiq/src/common/common.dart';
 import 'package:eulaiq/src/common/constants/dio_config.dart';
 import 'package:eulaiq/src/common/constants/global_state.dart';
-import 'package:eulaiq/src/features/auth/blocs/init_device_info.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SignInState extends ChangeNotifier {
@@ -16,22 +20,12 @@ class SignInState extends ChangeNotifier {
   String _password = '';
   String _firstname = '';
   String _lastname = '';
-  String birthdate = '';
   final List<String> interests = [];
-  double? _latitude;
-  double? _longitude;
-  String _ipAddress = '';
-  String _deviceType = '';
-  String _os = '';
-  String _uniqueIdentifier = '';
   bool _passwordVisible = false;
+  bool _continue = false;
 
   bool get passwordVisibility => _passwordVisible;
-  bool _continue = false;
   bool get continueButtonEnabled => _continue;
-
-  final String _appVersion = appVersion;
-  final DeviceInfoService _deviceInfoService = DeviceInfoService();
 
   void togglePasswordVisibility() {
     _passwordVisible = !_passwordVisible;
@@ -57,9 +51,7 @@ class SignInState extends ChangeNotifier {
       _firstname = value;
     } else if (fieldName == 'lastname') {
       _lastname = value;
-    } else if(fieldName == 'birthdate'){
-      birthdate = value;
-    } else if(fieldName == "interests"){
+    } else if (fieldName == "interests") {
       interests.add(value);
     }
     _continue = _firstname.isNotEmpty && _lastname.isNotEmpty;
@@ -69,129 +61,279 @@ class SignInState extends ChangeNotifier {
   Future<void> signIn(BuildContext context, WidgetRef ref) async {
     try {
       ref.read(loadingProvider.notifier).state = true;
-      ref.read(errorProvider.notifier).state = null;
-      ref.read(successProvider.notifier).state = null;
-      ref.read(statusProvider.notifier).state = null;
       ref.read(email.notifier).state = _email;
       ref.read(statusCodeProvider.notifier).state = null;
 
-      await _deviceInfoService.initDeviceInfo();
-      _latitude = _deviceInfoService.latitude;
-      _longitude = _deviceInfoService.longitude;
-      _ipAddress = _deviceInfoService.ipAddress;
-      _deviceType = _deviceInfoService.deviceType;
-      _os = _deviceInfoService.os;
-      _uniqueIdentifier = _deviceInfoService.uniqueIdentifier;
+      final deviceInfoService = ref.read(deviceInfoProvider);
+      await deviceInfoService.initDeviceInfo();
+      final notificationService = ref.read(notificationServiceProvider);
 
-      final response = await DioConfig.dio?.post('/user/login', data: {
-        'identity': _email.trim(),
-        'password': _password.trim(),
-        'location': {
-          'latitude': _latitude,
-          'longitude': _longitude,
+      final response = await DioConfig.dio?.post(
+        '/auth/login',
+        data: {
+          'identity': _email.trim(),
+          'password': _password.trim(),
+          'ipAddress': deviceInfoService.ipAddress,
+          'device': deviceInfoService.deviceInfo,
         },
-        'ipAddress': _ipAddress,
-        'deviceInfo': {
-          'deviceType': _deviceType,
-          'os': _os,
-          'appVersion': _appVersion,
-          'uniqueIdentifier': _uniqueIdentifier,
-        },
-      });
+      );
 
       final responseData = response?.data;
       if (response?.statusCode == 200) {
         ref.read(loadingProvider.notifier).state = false;
-        setMessages(ref, successMessage: responseData['message'] as String?);
         ref.read(statusCodeProvider.notifier).state = 200;
-        // ignore: use_build_context_synchronously
-        // context.router.replaceAll([const HomeRoute()]);
+
+        notificationService.showNotification(
+          message: responseData['message'] as String? ?? 'Login successful',
+          type: NotificationType.success,
+          duration: const Duration(seconds: 3),
+        );
+
+        if (context.mounted) {
+          context.router.replace(const SplashRoute());
+        }
       }
     } on DioException catch (error) {
-      print("Dio error: $error");
-      print("Response data: ${error.response?.data}");
-      print("Status code: ${error.response?.statusCode}");
       ref.read(loadingProvider.notifier).state = false;
+      final notificationService = ref.read(notificationServiceProvider);
 
-      if (error.response?.statusCode == 401 &&
-          error.response?.data['status'] == "temporary user") {
-        // ignore: use_build_context_synchronously
-        context.router.push(SignUpRoute());
-      } else if (error.response?.statusCode == 401 ||
-          error.response?.statusCode == 404) {
-        ref.read(statusCodeProvider.notifier).state =
-            error.response?.statusCode;
-        ref.read(statusProvider.notifier).state =
-            error.response?.data['status'] as String?;
-        setMessages(ref,
-            errorMessage: error.response?.data['errorMessage'] as String?);
-        // ignore: use_build_context_synchronously
-        context.router.push(const ConfirmationCodeInputRoute());
+      if (error.response?.statusCode == 403 &&
+          error.response?.data['status'] == "verification_required") {
+        notificationService.showNotification(
+          message:
+              error.response?.data['message'] as String? ??
+              'Verification required',
+          type: NotificationType.warning,
+        );
+
+        if (context.mounted) {
+          context.router.push(
+            VerificationCodeRoute(
+              verificationType: VerificationType.unUsualSignIn,
+            ),
+          );
+        }
+      } else if (error.response?.statusCode == 400) {
+        notificationService.showNotification(
+          message:
+              error.response?.data['errorMessage'] as String? ??
+              'Invalid credentials',
+          type: NotificationType.error,
+        );
       } else if (error.response?.statusCode == 500) {
-        setMessages(ref,
-            errorMessage:
-                'Please ensure that your internet connection is stable');
+        notificationService.showNotification(
+          message: 'Please ensure that your internet connection is stable',
+          type: NotificationType.error,
+        );
       }
     }
   }
 
   Future<void> signUp(BuildContext context, WidgetRef ref) async {
-    ref.read(loadingProvider.notifier).state = true;
-    ref.read(errorProvider.notifier).state = null;
-    ref.read(successProvider.notifier).state = null;
     try {
+      ref.read(loadingProvider.notifier).state = true;
+      final notificationService = ref.read(notificationServiceProvider);
+      final deviceInfoService = ref.read(deviceInfoProvider);
+      await deviceInfoService.initDeviceInfo();
+
       final response = await DioConfig.dio?.post(
-        '/user/register',
+        '/auth/register',
         data: {
           'firstname': _firstname,
           'lastname': _lastname,
-          'birthdate': birthdate,
-          'interests': interests,
-          'email': _email,
-          'location': {
-            'latitude': _latitude,
-            'longitude': _longitude,
-          },
-          'ipAddress': _ipAddress,
-          'deviceInfo': {
-            'deviceType': _deviceType,
-            'os': _os,
-            'appVersion': _appVersion,
-            'uniqueIdentifier': _uniqueIdentifier,
-          }
+          'email': _email.trim(),
+          'password': _password.trim(),
+          'ipAddress': deviceInfoService.ipAddress,
+          'deviceInfo': deviceInfoService.deviceInfo,
+          'anonymousId': null,
         },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
       );
 
-      final responseData = response?.data;
-
-      if (response?.statusCode == 200) {
+      if (response?.statusCode == 201) {
         ref.read(loadingProvider.notifier).state = false;
-        setMessages(ref, successMessage: responseData['message'] as String?);
-        // ignore: use_build_context_synchronously
-        // context.router.replaceAll([const HomeRoute()]);
+        notificationService.showNotification(
+          message:
+              response?.data['message'] as String? ?? 'Registration successful',
+          type: NotificationType.success,
+          duration: const Duration(seconds: 3),
+        );
+
+        if (context.mounted) {
+          context.router.push(
+            VerificationCodeRoute(verificationType: VerificationType.signUp),
+          );
+        }
       }
     } on DioException catch (error) {
       ref.read(loadingProvider.notifier).state = false;
-      setMessages(ref,
-          errorMessage: error.response?.data['errorMessage'] as String?);
-      if (error.response?.statusCode == 401 ||
-          error.response?.statusCode == 404) {
-        ref.read(statusCodeProvider.notifier).state =
-            error.response?.statusCode;
-        ref.read(statusProvider.notifier).state =
-            error.response?.data['status'] as String?;
-        // ignore: use_build_context_synchronously
-        context.router.push(const ConfirmationCodeInputRoute());
-      } else if (error.response?.statusCode == 500) {
-        setMessages(ref,
-            errorMessage:
-                'Please ensure that your internet connection is stable');
+      final notificationService = ref.read(notificationServiceProvider);
+
+      if (error.response?.statusCode == 400) {
+        notificationService.showNotification(
+          message:
+              error.response?.data['errorMessage'] as String? ??
+              'Registration failed',
+          type: NotificationType.error,
+        );
+      } else {
+        notificationService.showNotification(
+          message: 'An error occurred. Please try again.',
+          type: NotificationType.error,
+        );
       }
+    } catch (e) {
+      ref.read(loadingProvider.notifier).state = false;
+      ref
+          .read(notificationServiceProvider)
+          .showNotification(
+            message: 'An unexpected error occurred',
+            type: NotificationType.error,
+          );
+    }
+  }
+
+  Future<void> continueAsGuest(BuildContext context, WidgetRef ref) async {
+    try {
+      ref.read(guestSignInLoadingProvider.notifier).state = true;
+      final notificationService = ref.read(notificationServiceProvider);
+      final deviceInfoService = ref.read(deviceInfoProvider);
+      await deviceInfoService.initDeviceInfo();
+
+      final response = await DioConfig.dio?.post(
+        '/auth/anonymous',
+        data: {
+          'deviceInfo': deviceInfoService.deviceInfo,
+          'ipAddress': deviceInfoService.ipAddress,
+        },
+      );
+
+      if (response?.statusCode == 200) {
+        ref.read(guestSignInLoadingProvider.notifier).state = false;
+        notificationService.showNotification(
+          message: response?.data['message'] as String? ?? 'Welcome!',
+          type: NotificationType.success,
+          duration: const Duration(seconds: 3),
+        );
+
+        if (context.mounted) {
+          context.router.replace(const SplashRoute());
+        }
+      }
+    } on DioException catch (error) {
+      ref.read(guestSignInLoadingProvider.notifier).state = false;
+      final notificationService = ref.read(notificationServiceProvider);
+
+      if (error.response?.statusCode == 400) {
+        notificationService.showNotification(
+          message:
+              error.response?.data['errorMessage'] as String? ??
+              'Failed to continue as guest',
+          type: NotificationType.error,
+        );
+      } else {
+        notificationService.showNotification(
+          message: 'An error occurred. Please try again.',
+          type: NotificationType.error,
+        );
+      }
+    }
+  }
+
+  Future<void> signInWithGoogle(BuildContext context, WidgetRef ref) async {
+    try {
+      ref.read(googleSignInLoadingProvider.notifier).state = true;
+      final notificationService = ref.read(notificationServiceProvider);
+      final deviceInfoService = ref.read(deviceInfoProvider);
+      final googleAuthService = ref.read(googleAuthServiceProvider);
+
+      print('Initiating Google Sign In...'); // Debug log
+      final googleData = await googleAuthService.signInWithGoogle();
+
+      if (googleData == null) {
+        print('Google Sign In returned null'); // Debug log
+        ref.read(googleSignInLoadingProvider.notifier).state = false;
+        notificationService.showNotification(
+          message: 'Google sign in was cancelled',
+          type: NotificationType.warning,
+        );
+        return;
+      }
+
+      print('Got Google data, proceeding with backend auth...'); // Debug log
+      await deviceInfoService.initDeviceInfo();
+
+      final response = await DioConfig.dio?.post(
+        '/auth/googleSignIn',
+        data: {
+          'idToken': googleData['idToken'],
+          'deviceInfo': deviceInfoService.deviceInfo,
+          'ipAddress': deviceInfoService.ipAddress,
+        },
+      );
+
+      if (response?.statusCode == 200 || response?.statusCode == 201) {
+        ref.read(googleSignInLoadingProvider.notifier).state = false;
+        notificationService.showNotification(
+          message: response?.data['message'] as String? ?? 'Welcome!',
+          type: NotificationType.success,
+          duration: const Duration(seconds: 3),
+        );
+
+        if (context.mounted) {
+          context.router.replace(const SplashRoute());
+        }
+      }
+    } on DioException catch (error) {
+      ref.read(googleSignInLoadingProvider.notifier).state = false;
+      final notificationService = ref.read(notificationServiceProvider);
+
+      if (error.response?.statusCode == 403 &&
+          error.response?.data['status'] == "verification_required") {
+        notificationService.showNotification(
+          message:
+              error.response?.data['message'] as String? ??
+              'Verification required',
+          type: NotificationType.warning,
+        );
+
+        if (context.mounted) {
+          context.router.push(
+            VerificationCodeRoute(
+              verificationType: VerificationType.unUsualSignIn,
+            ),
+          );
+        }
+      } else if (error.response?.statusCode == 400 &&
+          error.response?.data['status'] == 'auth_method_mismatch') {
+        notificationService.showNotification(
+          message:
+              error.response?.data['errorMessage'] as String? ??
+              'Please sign in with your password',
+          type: NotificationType.warning,
+          duration: const Duration(seconds: 5),
+        );
+      } else if (error.response?.statusCode == 500) {
+        notificationService.showNotification(
+          message:
+              error.response?.data['errorMessage'] as String? ??
+              'Could not verify Google credentials',
+          type: NotificationType.error,
+        );
+      } else {
+        notificationService.showNotification(
+          message: 'An error occurred. Please try again.',
+          type: NotificationType.error,
+        );
+      }
+    } catch (e) {
+      print('Unexpected error during Google Sign In: $e'); // Debug log
+      ref.read(googleSignInLoadingProvider.notifier).state = false;
+      ref
+          .read(notificationServiceProvider)
+          .showNotification(
+            message: 'An unexpected error occurred during Google Sign In',
+            type: NotificationType.error,
+          );
     }
   }
 }

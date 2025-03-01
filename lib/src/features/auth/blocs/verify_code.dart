@@ -1,107 +1,300 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
+import 'package:eulaiq/src/common/providers/device_info_provider.dart';
+import 'package:eulaiq/src/common/services/notification_service.dart';
+import 'package:eulaiq/src/common/widgets/notification_card.dart';
 import 'package:flutter/material.dart';
 import 'package:eulaiq/src/common/common.dart';
 import 'package:eulaiq/src/common/constants/dio_config.dart';
 import 'package:eulaiq/src/common/constants/global_state.dart';
-import 'package:eulaiq/src/features/auth/blocs/init_device_info.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class VerifyCode {
-  String? _token;
-  double? _latitude;
-  double? _longitude;
-  String _ipAddress = '';
-  String _deviceType = '';
-  String _os = '';
-  String _uniqueIdentifier = '';
-  final String _appVersion = appVersion;
-  final DeviceInfoService _deviceInfoService = DeviceInfoService();
+enum VerificationType {
+  signUp,
+  unUsualSignIn,
+  resetPassword,
+  forgotPassword
+}
 
-  // Collect form data
-  Future<void> collectFormData(data) async {
-    _token = data['token'] as String?;
+final verifyCodeProvider = ChangeNotifierProvider((ref) => VerifyCode());
+
+class VerifyCode extends ChangeNotifier {
+  String _verificationToken = '';
+  bool _isResending = false;
+  late VerificationType _verificationType;
+  String _newPassword = '';
+  String _confirmPassword = '';
+  bool _passwordVisible = false;
+  
+  bool get isResending => _isResending;
+  VerificationType get verificationType => _verificationType;
+  bool get passwordVisible => _passwordVisible;
+
+  void setVerificationType(VerificationType type) {
+    _verificationType = type;
+    notifyListeners();
   }
 
-  // Verify unusual sign-in
-  Future<void> verifyUnUsualsignIn(BuildContext context, WidgetRef ref) async {
-    ref.read(loadingProvider.notifier).state = true;
-    setMessages(ref); // Clear previous messages
+  void togglePasswordVisibility() {
+    _passwordVisible = !_passwordVisible;
+    notifyListeners();
+  }
 
+  void updatePassword(String password) {
+    _newPassword = password;
+    notifyListeners();
+  }
+
+  void updateConfirmPassword(String password) {
+    _confirmPassword = password;
+    notifyListeners();
+  }
+
+  Future<void> verifyCode(BuildContext context, WidgetRef ref) async {
+    switch (_verificationType) {
+      case VerificationType.signUp:
+        await confirmEmailAndSignUp(context, ref);
+        break;
+      case VerificationType.unUsualSignIn:
+        await unUsualSignIn(context, ref);
+        break;
+      case VerificationType.resetPassword:
+        await resetPassword(context, ref);
+        break;
+      case VerificationType.forgotPassword:
+        await forgotPassword(_verificationToken, ref, context);
+        break;
+    }
+  }
+
+  Future<void> confirmEmailAndSignUp(BuildContext context, WidgetRef ref) async {
     try {
-      await _deviceInfoService.initDeviceInfo();
-      _latitude = _deviceInfoService.latitude;
-      _longitude = _deviceInfoService.longitude;
-      _ipAddress = _deviceInfoService.ipAddress;
-      _deviceType = _deviceInfoService.deviceType;
-      _os = _deviceInfoService.os;
-      _uniqueIdentifier = _deviceInfoService.uniqueIdentifier;
-
-      final response = await DioConfig.dio?.patch('/user/unUsualSignIn', data: {
-        'token': _token,
-        'location': {
-          'latitude': _latitude,
-          'longitude': _longitude,
+      final deviceInfo = ref.read(deviceInfoProvider);
+      final notificationService = ref.read(notificationServiceProvider);
+      ref.read(loadingProvider.notifier).state = true;
+      
+      final response = await DioConfig.dio?.patch(
+        '/auth/confirmEmailAndSignUp',
+        data: {
+          'token': _verificationToken,
+          'deviceInfo': deviceInfo.deviceInfo,
         },
-        'ipAddress': _ipAddress,
-        'deviceInfo': {
-          'deviceType': _deviceType,
-          'os': _os,
-          'appVersion': _appVersion,
-          'uniqueIdentifier': _uniqueIdentifier,
-        },
-      });
+      );
 
-      final responseData = response?.data;
       if (response?.statusCode == 200) {
-        ref.read(loadingProvider.notifier).state = false;
-        setMessages(ref, successMessage: responseData['message']);
-        // context.router.replace(const HomeRoute());
+        notificationService.showNotification(
+          message: response?.data['message'] as String? ?? 'Email verified successfully',
+          type: NotificationType.success,
+          duration: const Duration(seconds: 3),
+        );
+        
+        if (context.mounted) {
+          context.router.replace(const SplashRoute());
+        }
       }
-    } on DioException catch (error) {
+    } catch (e) {
       ref.read(loadingProvider.notifier).state = false;
-      setMessages(ref, errorMessage: '${error.response?.data['errorMessage']}');
-      if (error.response?.statusCode == 500) {
-        setMessages(ref, errorMessage: 'Please ensure that your internet connection is stable');
-      }
+      ref.read(notificationServiceProvider).showNotification(
+        message: 'Verification failed. Please try again.',
+        type: NotificationType.error,
+      );
     }
   }
 
-  // Resend verification token
-  Future<void> resendverificationtoken(BuildContext context, WidgetRef ref) async {
-    final email = 'ref.watch(email)';
+  Future<void> unUsualSignIn(BuildContext context, WidgetRef ref) async {
     try {
-      final response = await DioConfig.dio?.post('/user/resendVerificationToken', data: {
-        'email': email,
-      });
-      final responseData = response?.data;
+      final deviceInfo = ref.read(deviceInfoProvider);
+      
+      final response = await DioConfig.dio?.patch(
+        '/auth/unUsualSignIn',
+        data: {
+          'token': _verificationToken,
+          'ipAddress': deviceInfo.ipAddress,
+          'device': deviceInfo.deviceInfo,
+        },
+      );
+
       if (response?.statusCode == 200) {
-        setMessages(ref, successMessage: responseData['message']);
+        final token = response?.data['token'] as String?;
+        if (token != null) {
+          await ref.read(sharedPreferencesProvider).setString('token', token);
+          if (context.mounted) {
+            context.router.replace(const SplashRoute());
+          }
+        }
       }
-    } on DioException catch (error) {
-      setMessages(ref, errorMessage: '${error.response?.data['errorMessage']}');
-      if (error.response?.statusCode == 500) {
-        setMessages(ref, errorMessage: 'Please ensure that your internet connection is stable');
-      }
+    } catch (e) {
+      rethrow;
     }
   }
 
-  // Confirm email
-  Future<void> confirmEmail(BuildContext context, WidgetRef ref) async {
+  Future<void> resendVerificationToken(String email, WidgetRef ref) async {
     try {
-      final response = await DioConfig.dio?.patch('/user/confirmEmailAndSignUp', data: {
-        'token': _token,
-      });
-      final responseData = response?.data;
+      _isResending = true;
+      notifyListeners();
+
+      final response = await DioConfig.dio?.post(
+        '/auth/resendVerificationToken',
+        data: {'email': email},
+      );
+
+      _isResending = false;
+      notifyListeners();
+
       if (response?.statusCode == 200) {
-        setMessages(ref, successMessage: '${responseData['message']}, finish creating your account');
-        context.router.replace(SignUpRoute());
+        ref.read(notificationServiceProvider).showNotification(
+          message: 'Verification code resent successfully',
+          type: NotificationType.success,
+          duration: const Duration(seconds: 2),
+        );
       }
-    } on DioException catch (error) {
-      setMessages(ref, errorMessage: '${error.response?.data['errorMessage']}');
-      if (error.response?.statusCode == 500) {
-        setMessages(ref, errorMessage: 'Please ensure that your internet connection is stable');
+    } catch (e) {
+      _isResending = false;
+      notifyListeners();
+      ref.read(notificationServiceProvider).showNotification(
+        message: 'Failed to resend verification code',
+        type: NotificationType.error,
+      );
+    }
+  }
+
+ Future<void> forgotPassword(String email, WidgetRef ref, BuildContext context) async {
+  try {
+    ref.read(loadingProvider.notifier).state = true;
+    final notificationService = ref.read(notificationServiceProvider);
+
+    final response = await DioConfig.dio?.post(
+      '/auth/forgotpassword',
+      data: {'email': email},
+    );
+
+    ref.read(loadingProvider.notifier).state = false;
+
+    if (response?.statusCode == 200) {
+      notificationService.showNotification(
+        message: response?.data['message'] as String? ?? 'Reset link sent to your email',
+        type: NotificationType.success,
+        duration: const Duration(seconds: 3),
+      );
+
+      // Store email for verification
+      ref.read(emailProvider.notifier).state = email;
+
+      if (context.mounted) {
+        context.router.push(
+          VerificationCodeRoute(
+            verificationType: VerificationType.resetPassword,
+          ),
+        );
       }
     }
+  } catch (e) {
+    ref.read(loadingProvider.notifier).state = false;
+    ref.read(notificationServiceProvider).showNotification(
+      message: 'Failed to send reset link',
+      type: NotificationType.error,
+    );
+  }
+}
+  
+  Future<void> resetPassword(BuildContext context, WidgetRef ref) async {
+  try {
+    if (_verificationToken.isEmpty) {
+      ref.read(notificationServiceProvider).showNotification(
+        message: 'Please enter the verification code',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (_newPassword.isEmpty || _confirmPassword.isEmpty) {
+      ref.read(notificationServiceProvider).showNotification(
+        message: 'Please enter both passwords',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    if (_newPassword != _confirmPassword) {
+      ref.read(notificationServiceProvider).showNotification(
+        message: 'Passwords do not match',
+        type: NotificationType.error,
+      );
+      return;
+    }
+
+    ref.read(loadingProvider.notifier).state = true;
+    
+    final response = await DioConfig.dio?.put(
+      '/auth/resetpassword',
+      data: {
+        'resetPasswordToken': _verificationToken,
+        'newPassword': _newPassword,
+      },
+    );
+
+    ref.read(loadingProvider.notifier).state = false;
+
+    if (response?.statusCode == 200) {
+      ref.read(notificationServiceProvider).showNotification(
+        message: response?.data['message'] as String? ?? 'Password reset successful',
+        type: NotificationType.success,
+        duration: const Duration(seconds: 3),
+      );
+
+      if (context.mounted) {
+        ref.read(email.notifier).state = '';
+        context.router.replace(SignInRoute());
+      }
+    }
+  } on DioException catch (error) {
+    ref.read(loadingProvider.notifier).state = false;
+    final notificationService = ref.read(notificationServiceProvider);
+
+    if (error.response?.statusCode == 400) {
+      final errorMessage = error.response?.data['errorMessage'] as String?;
+      switch (errorMessage) {
+        case 'Please provide a valid token':
+          notificationService.showNotification(
+            message: 'Invalid verification code',
+            type: NotificationType.error,
+          );
+          break;
+        case 'Invalid token or Session Expired':
+          notificationService.showNotification(
+            message: 'Verification code expired. Please request a new one',
+            type: NotificationType.error,
+          );
+          break;
+        case 'Please use a password you haven\'t used before':
+          notificationService.showNotification(
+            message: errorMessage ?? 'Password reset failed',
+            type: NotificationType.error,
+          );
+          break;
+        default:
+          notificationService.showNotification(
+            message: errorMessage ?? 'Password reset failed',
+            type: NotificationType.error,
+          );
+      }
+    } else {
+      notificationService.showNotification(
+        message: 'An error occurred. Please try again.',
+        type: NotificationType.error,
+      );
+    }
+  } catch (e) {
+    ref.read(loadingProvider.notifier).state = false;
+    ref.read(notificationServiceProvider).showNotification(
+      message: 'An unexpected error occurred',
+      type: NotificationType.error,
+    );
+  }
+}
+
+  void updateToken(String token) {
+    _verificationToken = token;
+    notifyListeners();
   }
 }

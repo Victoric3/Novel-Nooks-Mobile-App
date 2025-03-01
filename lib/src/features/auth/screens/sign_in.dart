@@ -15,7 +15,6 @@ class SignInScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final signInState = ref.watch(signInProvider);
     final isLoading = ref.watch(loadingProvider);
-    final errorMessage = ref.watch(errorProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
 
@@ -24,7 +23,7 @@ class SignInScreen extends ConsumerWidget {
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(
             horizontal: size.width * 0.06, // Responsive horizontal padding
-            vertical: size.height * 0.02,  // Responsive vertical padding
+            vertical: size.height * 0.02, // Responsive vertical padding
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,9 +35,10 @@ class SignInScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDark 
-                        ? AppColors.neonCyan.withOpacity(0.3) 
-                        : AppColors.brandDeepGold.withOpacity(0.3),
+                    color:
+                        isDark
+                            ? AppColors.neonCyan.withOpacity(0.3)
+                            : AppColors.brandDeepGold.withOpacity(0.3),
                   ),
                 ),
                 child: IconButton(
@@ -51,19 +51,31 @@ class SignInScreen extends ConsumerWidget {
                 ),
               ),
               SizedBox(height: size.height * 0.04),
-              
+
               // Header
               Text(
                 'Welcome Back',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontSize: size.width * 0.07, // Responsive text size
                   fontWeight: FontWeight.bold,
-                  foreground: Paint()
-                    ..shader = LinearGradient(
-                      colors: isDark 
-                          ? [AppColors.neonCyan, AppColors.neonPurple]
-                          : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
-                    ).createShader(Rect.fromLTWH(0, 0, size.width * 0.5, size.height * 0.1)),
+                  foreground:
+                      Paint()
+                        ..shader = LinearGradient(
+                          colors:
+                              isDark
+                                  ? [AppColors.neonCyan, AppColors.neonPurple]
+                                  : [
+                                    AppColors.brandDeepGold,
+                                    AppColors.brandWarmOrange,
+                                  ],
+                        ).createShader(
+                          Rect.fromLTWH(
+                            0,
+                            0,
+                            size.width * 0.5,
+                            size.height * 0.1,
+                          ),
+                        ),
                 ),
               ),
               SizedBox(height: size.height * 0.01),
@@ -71,7 +83,10 @@ class SignInScreen extends ConsumerWidget {
                 'Sign in to continue your learning journey',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   fontSize: size.width * 0.04, // Responsive text size
-                  color: isDark ? AppColors.textPrimary.withOpacity(0.7) : AppColors.neutralDarkGray,
+                  color:
+                      isDark
+                          ? AppColors.textPrimary.withOpacity(0.7)
+                          : AppColors.neutralDarkGray,
                 ),
               ),
               SizedBox(height: size.height * 0.06),
@@ -86,7 +101,8 @@ class SignInScreen extends ConsumerWidget {
                     _CustomTextField(
                       label: 'Email',
                       keyboardType: TextInputType.emailAddress,
-                      onChanged: (value) => signInState.validateForm(value, 'email'),
+                      onChanged:
+                          (value) => signInState.validateForm(value, 'email'),
                       validator: (value) {
                         if (!signInState.emailRegExp.hasMatch(value!)) {
                           return 'Please enter a valid email';
@@ -105,7 +121,9 @@ class SignInScreen extends ConsumerWidget {
                       isPassword: true,
                       passwordVisible: signInState.passwordVisibility,
                       onTogglePassword: signInState.togglePasswordVisibility,
-                      onChanged: (value) => signInState.validateForm(value, 'password'),
+                      onChanged:
+                          (value) =>
+                              signInState.validateForm(value, 'password'),
                       validator: (value) {
                         if (value!.isEmpty) {
                           return 'Please enter your password';
@@ -122,64 +140,64 @@ class SignInScreen extends ConsumerWidget {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => context.router.push(SignInRoute()),
+                        onPressed: () => context.router.push(ResetPasswordRoute()),
                         child: Text(
                           'Forgot Password?',
                           style: TextStyle(
                             fontSize: size.width * 0.035,
-                            color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                            color:
+                                isDark
+                                    ? AppColors.neonCyan
+                                    : AppColors.brandDeepGold,
                           ),
                         ),
                       ),
                     ),
                     SizedBox(height: size.height * 0.04),
 
-                    // Error Message
-                    if (errorMessage != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          errorMessage,
-                          style: TextStyle(
-                            color: Colors.red.shade400,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-
                     // Sign In Button
                     SizedBox(
                       width: double.infinity,
                       height: size.height * 0.07,
                       child: ElevatedButton(
-                        onPressed: isLoading ? null : () {
-                          if (formKey.currentState!.validate()) {
-                            signInState.signIn(context, ref);
-                          }
-                        },
+                        onPressed:
+                            isLoading || !signInState.continueButtonEnabled
+                                ? null
+                                : () {
+                                  if (formKey.currentState!.validate()) {
+                                    signInState.signIn(context, ref);
+                                  }
+                                },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                          foregroundColor: isDark ? AppColors.darkBg : Colors.white,
+                          backgroundColor:
+                              isDark
+                                  ? AppColors.neonCyan
+                                  : AppColors.brandDeepGold,
+                          foregroundColor:
+                              isDark ? AppColors.darkBg : Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(28),
                           ),
                         ),
-                        child: isLoading 
-                            ? SizedBox(
-                                height: size.width * 0.06,
-                                width: size.width * 0.06,
-                                child: const CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                  strokeWidth: 2,
+                        child:
+                            isLoading
+                                ? SizedBox(
+                                  height: size.width * 0.06,
+                                  width: size.width * 0.06,
+                                  child: const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                : Text(
+                                  'Sign In',
+                                  style: TextStyle(
+                                    fontSize: size.width * 0.04,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              )
-                            : Text(
-                                'Sign In',
-                                style: TextStyle(
-                                  fontSize: size.width * 0.04,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
                       ),
                     ),
                     SizedBox(height: size.height * 0.03),
@@ -189,7 +207,10 @@ class SignInScreen extends ConsumerWidget {
                       child: RichText(
                         text: TextSpan(
                           style: TextStyle(
-                            color: isDark ? AppColors.textPrimary : AppColors.textDark,
+                            color:
+                                isDark
+                                    ? AppColors.textPrimary
+                                    : AppColors.textDark,
                             fontSize: size.width * 0.04,
                           ),
                           children: [
@@ -200,7 +221,10 @@ class SignInScreen extends ConsumerWidget {
                                 child: Text(
                                   'Sign up',
                                   style: TextStyle(
-                                    color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                                    color:
+                                        isDark
+                                            ? AppColors.neonCyan
+                                            : AppColors.brandDeepGold,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -264,9 +288,10 @@ class _CustomTextField extends StatelessWidget {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: isDark 
-                  ? AppColors.neonCyan.withOpacity(0.3)
-                  : AppColors.brandDeepGold.withOpacity(0.3),
+              color:
+                  isDark
+                      ? AppColors.neonCyan.withOpacity(0.3)
+                      : AppColors.brandDeepGold.withOpacity(0.3),
             ),
           ),
           focusedBorder: OutlineInputBorder(
@@ -275,15 +300,19 @@ class _CustomTextField extends StatelessWidget {
               color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
             ),
           ),
-          suffixIcon: isPassword
-              ? IconButton(
-                  icon: Icon(
-                    passwordVisible! ? Icons.visibility : Icons.visibility_off,
-                    color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                  ),
-                  onPressed: onTogglePassword,
-                )
-              : null,
+          suffixIcon:
+              isPassword
+                  ? IconButton(
+                    icon: Icon(
+                      passwordVisible!
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color:
+                          isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                  : null,
         ),
         obscureText: isPassword && !passwordVisible!,
         keyboardType: keyboardType,

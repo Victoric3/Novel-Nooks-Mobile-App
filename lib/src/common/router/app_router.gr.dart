@@ -27,12 +27,6 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const CommunityScreen(),
       );
     },
-    ConfirmationCodeInputRoute.name: (routeData) {
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: const ConfirmationCodeInputScreen(),
-      );
-    },
     CreateRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -57,6 +51,12 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const LibraryScreen(),
       );
     },
+    ResetPasswordRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const ResetPasswordScreen(),
+      );
+    },
     ScheduleRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -72,11 +72,9 @@ abstract class _$AppRouter extends RootStackRouter {
       );
     },
     SignUpRoute.name: (routeData) {
-      final args = routeData.argsAs<SignUpRouteArgs>(
-          orElse: () => const SignUpRouteArgs());
       return AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: SignUpScreen(key: args.key),
+        child: const SignUpScreen(),
       );
     },
     SplashRoute.name: (routeData) {
@@ -95,6 +93,16 @@ abstract class _$AppRouter extends RootStackRouter {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
         child: const TabsScreenSmall(),
+      );
+    },
+    VerificationCodeRoute.name: (routeData) {
+      final args = routeData.argsAs<VerificationCodeRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: VerificationCodeScreen(
+          verificationType: args.verificationType,
+          key: args.key,
+        ),
       );
     },
   };
@@ -124,20 +132,6 @@ class CommunityRoute extends PageRouteInfo<void> {
         );
 
   static const String name = 'CommunityRoute';
-
-  static const PageInfo<void> page = PageInfo<void>(name);
-}
-
-/// generated route for
-/// [ConfirmationCodeInputScreen]
-class ConfirmationCodeInputRoute extends PageRouteInfo<void> {
-  const ConfirmationCodeInputRoute({List<PageRouteInfo>? children})
-      : super(
-          ConfirmationCodeInputRoute.name,
-          initialChildren: children,
-        );
-
-  static const String name = 'ConfirmationCodeInputRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }
@@ -199,6 +193,20 @@ class LibraryRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ResetPasswordScreen]
+class ResetPasswordRoute extends PageRouteInfo<void> {
+  const ResetPasswordRoute({List<PageRouteInfo>? children})
+      : super(
+          ResetPasswordRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'ResetPasswordRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
 /// [ScheduleScreen]
 class ScheduleRoute extends PageRouteInfo<void> {
   const ScheduleRoute({List<PageRouteInfo>? children})
@@ -242,30 +250,16 @@ class SignInRouteArgs {
 
 /// generated route for
 /// [SignUpScreen]
-class SignUpRoute extends PageRouteInfo<SignUpRouteArgs> {
-  SignUpRoute({
-    Key? key,
-    List<PageRouteInfo>? children,
-  }) : super(
+class SignUpRoute extends PageRouteInfo<void> {
+  const SignUpRoute({List<PageRouteInfo>? children})
+      : super(
           SignUpRoute.name,
-          args: SignUpRouteArgs(key: key),
           initialChildren: children,
         );
 
   static const String name = 'SignUpRoute';
 
-  static const PageInfo<SignUpRouteArgs> page = PageInfo<SignUpRouteArgs>(name);
-}
-
-class SignUpRouteArgs {
-  const SignUpRouteArgs({this.key});
-
-  final Key? key;
-
-  @override
-  String toString() {
-    return 'SignUpRouteArgs{key: $key}';
-  }
+  static const PageInfo<void> page = PageInfo<void>(name);
 }
 
 /// generated route for
@@ -308,4 +302,42 @@ class TabsRouteSmall extends PageRouteInfo<void> {
   static const String name = 'TabsRouteSmall';
 
   static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [VerificationCodeScreen]
+class VerificationCodeRoute extends PageRouteInfo<VerificationCodeRouteArgs> {
+  VerificationCodeRoute({
+    required VerificationType verificationType,
+    Key? key,
+    List<PageRouteInfo>? children,
+  }) : super(
+          VerificationCodeRoute.name,
+          args: VerificationCodeRouteArgs(
+            verificationType: verificationType,
+            key: key,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'VerificationCodeRoute';
+
+  static const PageInfo<VerificationCodeRouteArgs> page =
+      PageInfo<VerificationCodeRouteArgs>(name);
+}
+
+class VerificationCodeRouteArgs {
+  const VerificationCodeRouteArgs({
+    required this.verificationType,
+    this.key,
+  });
+
+  final VerificationType verificationType;
+
+  final Key? key;
+
+  @override
+  String toString() {
+    return 'VerificationCodeRouteArgs{verificationType: $verificationType, key: $key}';
+  }
 }

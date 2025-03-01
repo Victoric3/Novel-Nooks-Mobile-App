@@ -10,6 +10,9 @@ dependencies:
   cached_network_image: ^3.3.0
   cupertino_icons: ^1.0.3
   dio: ^5.4.0
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  google_sign_in: ^6.2.1
   flutter:
     sdk: flutter
   flutter_icons:
@@ -33,6 +36,10 @@ dependencies:
   dio_cookie_manager: ^3.1.1
   material_design_icons_flutter: ^7.0.7296
   lottie: ^2.7.0
+  pin_code_fields: ^8.0.1
+  firebase_messaging: ^14.7.10
+  flutter_local_notifications: ^18.0.1
+  firebase_in_app_messaging: ^0.7.5+7
 
 dependency_overrides:
   collection: ^1.17.2
@@ -58,3 +65,5 @@ flutter:
     - assets/brand_assets/Eula_dipa.png
     - assets/brand_assets/Eula.png
     - assets/images/app-logo.png
+    - assets/icons/google-icon.png
+
