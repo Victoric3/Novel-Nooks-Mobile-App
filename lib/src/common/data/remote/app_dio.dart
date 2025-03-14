@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:eulaiq/src/common/common.dart';
+import 'package:novelnooks/src/common/common.dart';
 import 'package:logman/logman.dart';
 
 class AppDio with DioMixin implements Dio {

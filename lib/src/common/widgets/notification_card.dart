@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/theme/app_theme.dart';
+import 'package:novelnooks/src/common/theme/app_theme.dart';
 
 class NotificationCard extends StatefulWidget {
   final String message;

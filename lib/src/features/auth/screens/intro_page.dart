@@ -1,10 +1,10 @@
-import 'dart:math';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
-import 'package:eulaiq/src/common/common.dart';
-import 'package:eulaiq/src/common/theme/app_theme.dart';
+import 'package:novelnooks/src/common/common.dart';
+import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 @RoutePage()
 class IntroScreen extends ConsumerStatefulWidget {
@@ -16,640 +16,440 @@ class IntroScreen extends ConsumerStatefulWidget {
 
 class _IntroScreenState extends ConsumerState<IntroScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+  late final PageController _pageController;
+  int _currentPage = 0;
+  final int _numPages = 3;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat();
+    _pageController = PageController();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand, // Add this
-        children: [
-          // Background with dynamic gradient
-          Positioned.fill(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 1000),
-              decoration: BoxDecoration(gradient: _buildGradient(isDark)),
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: const [0.0, 0.6, 1.0],
+            colors: isDark 
+              ? [
+                  AppColors.darkBg,
+                  Color.lerp(AppColors.darkBg, AppColors.deepTeal, 0.08) ?? AppColors.darkBg,
+                  Color.lerp(AppColors.darkBg, AppColors.deepTeal, 0.15) ?? AppColors.darkBg,
+                ]
+              : [
+                  Colors.white,
+                  Color.lerp(Colors.white, AppColors.neutralLightGray, 0.5) ?? Colors.white,
+                  Color.lerp(Colors.white, AppColors.brandOrange, 0.08) ?? Colors.white,
+                ],
           ),
-
-          // Particle effect for dark mode
-          if (isDark)
-            Positioned.fill(
-              child: AnimatedParticleField(
-                colors: const [AppColors.neonCyan, AppColors.neonPurple],
-                controller: _controller,
-              ),
-            ),
-
-          // Main content
-          SafeArea(
-            child: LayoutBuilder(
-              // Add LayoutBuilder
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  // Add ScrollView for small screens
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // App logo and name - enhanced
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+                child: Column(
+                  children: [
+                    // Larger logo with better presentation
+                    Hero(
+                      tag: 'app_logo',
+                      child: Container(
+                        height: 80,
+                        width: 80,
+                        decoration: BoxDecoration(
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark 
+                                ? AppColors.greenTeal.withOpacity(0.25)
+                                : AppColors.brandOrange.withOpacity(0.25),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            'assets/images/app-logo.png',
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                          ),
+                        ),
+                      ),
                     ),
-                    child: IntrinsicHeight(
-                      // Add IntrinsicHeight
-                      child: Column(
-                        children: [
-                          const Spacer(flex: 2),
-
-                          // Mascot section with constrained size
-                          Hero(
-                            tag: 'app_mascot',
-                            child: SizedBox(
-                              width: size.width * 0.5, // Reduce from 0.6 to 0.5
-                              height: size.width * 0.5,
-                              child: Stack(
-                                fit: StackFit.expand, // Add this
-                                alignment: Alignment.center,
-                                children: [
-                                  // Glass effect background
-                                  _GlassContainer(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color:
-                                            isDark
-                                                ? AppColors.darkBgCard
-                                                    .withOpacity(0.3)
-                                                : Colors.white.withOpacity(0.8),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.neonCyan
-                                                .withOpacity(0.2),
-                                            blurRadius: 20,
-                                            spreadRadius: 5,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-
-                                  // Animated mascot
-                                  // In the AnimatedBuilder for the mascot
-                                  AnimatedBuilder(
-                                    animation: _controller,
-                                    builder: (context, child) {
-                                      return Transform.translate(
-                                        offset: Offset(
-                                          0,
-                                          6 *
-                                              sin(
-                                                _controller.value * 4 * pi,
-                                              ), // Increased frequency and reduced amplitude
-                                        ),
-                                        child: Transform.rotate(
-                                          angle:
-                                              0.03 *
-                                              sin(
-                                                _controller.value * 2 * pi,
-                                              ), // Adjusted rotation
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: Image.asset(
-                                      'assets/brand_assets/Eula.png',
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          SizedBox(
-                            height: size.height * 0.04,
-                          ), // Responsive spacing
-                          // Orbital feature icons with constrained size
-                          SizedBox(
-                            height: size.height * 0.15, // Responsive height
-                            child: _OrbitalFeatureIcons(
-                              controller: _controller,
-                            ),
-                          ),
-
-                          SizedBox(height: size.height * 0.04),
-
-                          // Animated text content
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            child: _AnimatedIntroText(
-                              controller: _controller,
-                              isDark: isDark,
-                              textTheme: textTheme,
-                            ),
-                          ),
-
-                          const Spacer(flex: 2),
-
-                          // CTA button
-                          Padding(
-                            padding: EdgeInsets.only(
-                              bottom: size.height * 0.05,
-                              left: 24,
-                              right: 24,
-                            ),
-                            child: _NeonButton(
-                              onPressed:
-                                  () => context.router.replace(const AuthRoute()),
-                            ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // App name with shadow for better visibility
+                    Text(
+                      'Novel Nooks',
+                      style: textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.neutralDarkGray,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 2,
+                            color: isDark 
+                              ? Colors.black.withOpacity(0.5)
+                              : Colors.grey.withOpacity(0.3),
+                            offset: const Offset(0, 1),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-LinearGradient _buildGradient(bool isDark) {
-  return isDark
-      ? LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          AppColors.darkBg,
-          AppColors.darkBg,
-          AppColors.neonPurple.withOpacity(0.1),
-        ],
-        stops: const [0.0, 0.7, 1.0],
-      )
-      : LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          AppColors.neutralLightGray,
-          AppColors.brandDeepGold.withOpacity(0.05),
-        ],
-      );
-}
-
-class _GlassContainer extends StatelessWidget {
-  final Widget child;
-
-  const _GlassContainer({required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(100),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _OrbitalFeatureIcons extends StatefulWidget {
-  final AnimationController controller;
-
-  const _OrbitalFeatureIcons({required this.controller});
-
-  @override
-  __OrbitalFeatureIconsState createState() => __OrbitalFeatureIconsState();
-}
-
-class __OrbitalFeatureIconsState extends State<_OrbitalFeatureIcons> {
-  final List<Map<String, dynamic>> _features = [
-    {'icon': Icons.auto_stories, 'label': 'Smart Text Conversion'},
-    {'icon': Icons.audiotrack, 'label': 'Personalized Audio'},
-    {'icon': Icons.slow_motion_video, 'label': 'AI Video Lessons'},
-    {'icon': Icons.psychology, 'label': 'Eula AI Assistant'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: SizedBox(
-        height: 120,
-        child: AnimatedBuilder(
-          animation: widget.controller,
-          builder: (context, _) {
-            return Stack(
-              alignment: Alignment.center,
-              children: List.generate(_features.length, (index) {
-                // Slow down rotation by reducing multiplier from 2 to 1
-                final angle =
-                    2 * pi * index / _features.length +
-                    widget.controller.value * pi; // Reduced from 2 * pi to pi
-
-                return Transform.translate(
-                  offset: Offset(60 * cos(angle), 60 * sin(angle)),
-                  child: Transform.rotate(
-                    angle: -angle, // Counter-rotate icons to keep them upright
-                    child: _FeatureIcon(
-                      icon: _features[index]['icon'] as IconData,
-                      label: _features[index]['label'] as String,
-                      color:
-                          Theme.of(context).brightness == Brightness.dark
-                              ? AppColors.neonCyan
-                              : AppColors.brandDeepGold,
+                    
+                    // Optional tagline
+                    Text(
+                      'Your personal reading sanctuary',
+                      style: textTheme.bodyLarge?.copyWith(
+                        color: isDark 
+                          ? Colors.white.withOpacity(0.7)
+                          : AppColors.neutralDarkGray.withOpacity(0.7),
+                      ),
                     ),
-                  ),
-                );
-              }),
-            );
-          },
+                  ],
+                ),
+              ),
+              
+              // Main intro content
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() => _currentPage = index);
+                  },
+                  physics: const ClampingScrollPhysics(),
+                  children: [
+                    _buildIntroPage(
+                      context,
+                      isDark,
+                      'Your Digital Bookshelf',
+                      'Organize and access your favorite books anytime, anywhere.',
+                      MdiIcons.bookshelf,
+                    ),
+                    _buildIntroPage(
+                      context,
+                      isDark,
+                      'Immersive Reading',
+                      'Customize your reading experience with themes, fonts, and more.',
+                      MdiIcons.bookOpenPageVariant,
+                    ),
+                    _buildIntroPage(
+                      context,
+                      isDark,
+                      'Join the Community',
+                      'Connect with readers, share recommendations, and discover new books.',
+                      MdiIcons.accountGroup,
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Page indicator - refined
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(_numPages, (index) => _buildPageIndicator(index == _currentPage, isDark)),
+                ),
+              ),
+              
+              // Action buttons - improved
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                child: Row(
+                  children: [
+                    if (_currentPage > 0)
+                      Expanded(
+                        flex: 1,
+                        child: TextButton.icon(
+                          onPressed: () {
+                            _pageController.previousPage(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOut,
+                            );
+                          },
+                          icon: Icon(
+                            Icons.arrow_back_rounded,
+                            color: isDark ? AppColors.greenTeal : AppColors.brandOrange,
+                          ),
+                          label: Text(
+                            'Back',
+                            style: TextStyle(
+                              color: isDark ? AppColors.greenTeal : AppColors.brandOrange,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      const Spacer(flex: 1),
+                    
+                    const SizedBox(width: 16),
+                    
+                    Expanded(
+                      flex: 2,
+                      child: _customButton(
+                        isDark: isDark,
+                        label: _currentPage == _numPages - 1 ? 'Get Started' : 'Next',
+                        icon: _currentPage == _numPages - 1 
+                          ? Icons.login_rounded 
+                          : Icons.arrow_forward_rounded,
+                        onPressed: () {
+                          if (_currentPage < _numPages - 1) {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 400),
+                              curve: Curves.easeInOut,
+                            );
+                          } else {
+                            context.router.replace(const AuthRoute());
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _FeatureIcon extends StatefulWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  const _FeatureIcon({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  State<_FeatureIcon> createState() => _FeatureIconState();
-}
-
-class _FeatureIconState extends State<_FeatureIcon>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _hoverController;
-  bool isHovered = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _hoverController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-  }
-
-  @override
-  void dispose() {
-    _hoverController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) {
-        setState(() => isHovered = true);
-        _hoverController.forward();
-      },
-      onExit: (_) {
-        setState(() => isHovered = false);
-        _hoverController.reverse();
-      },
-      child: AnimatedBuilder(
-        animation: _hoverController,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: 1.0 + (_hoverController.value * 0.1),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: widget.color.withOpacity(
-                  0.1 + (_hoverController.value * 0.1),
-                ),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  if (isHovered)
-                    BoxShadow(
-                      color: widget.color.withOpacity(0.3),
-                      blurRadius: 8,
-                      spreadRadius: 1,
-                    ),
-                ],
-              ),
-              child: Icon(
-                widget.icon,
-                color: widget.color,
-                size: 20 + (_hoverController.value * 2),
-              ),
-            ),
-          );
-        },
+  
+  Widget _buildPageIndicator(bool isActive, bool isDark) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      margin: const EdgeInsets.symmetric(horizontal: 5),
+      height: 8,
+      width: isActive ? 24 : 8,
+      decoration: BoxDecoration(
+        color: isActive 
+          ? (isDark ? AppColors.greenTeal : AppColors.brandOrange)
+          : (isDark ? Colors.white30 : Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: isActive ? [
+          BoxShadow(
+            color: (isDark ? AppColors.greenTeal : AppColors.brandOrange).withOpacity(0.3),
+            blurRadius: 4,
+            spreadRadius: 1,
+          )
+        ] : null,
       ),
     );
   }
-}
+  
+  Widget _buildIntroPage(BuildContext context, bool isDark, String title, String subtitle, IconData iconData) {
+    // Get screen size to make our layout more responsive
+    final size = MediaQuery.of(context).size;
+    final isSmallScreen = size.height < 600;  // Adjust for smaller screens
 
-class FeatureDetails {
-  final String title;
-  final String description;
-
-  FeatureDetails({required this.title, required this.description});
-}
-
-class _AnimatedIntroText extends StatefulWidget {
-  final AnimationController controller;
-  final bool isDark;
-  final TextTheme textTheme;
-
-  const _AnimatedIntroText({
-    required this.controller,
-    required this.isDark,
-    required this.textTheme,
-  });
-
-  @override
-  State<_AnimatedIntroText> createState() => _AnimatedIntroTextState();
-}
-
-class _AnimatedIntroTextState extends State<_AnimatedIntroText>
-    with SingleTickerProviderStateMixin {
-  final List<String> _taglines = [
-    'Bite-Sized Learning',
-    'PDF to Podcast in 1 Click',
-    'Context-Aware Study Plans',
-    'Crowd-Sourced Mnemonics',
-  ];
-
-  int _currentIndex = 0;
-  late AnimationController _textController;
-
-  @override
-  void initState() {
-    super.initState();
-    _textController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 3),
-    )..addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() => _currentIndex = (_currentIndex + 1) % _taglines.length);
-        _textController.reset();
-        _textController.forward();
-      }
-    });
-
-    _textController.forward();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 500),
-          transitionBuilder:
-              (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.1),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              ),
-          child: Text(
-            _taglines[_currentIndex],
-            key: ValueKey<int>(_currentIndex),
-            style: widget.textTheme.displaySmall?.copyWith(
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-              foreground:
-                  Paint()
-                    ..shader = LinearGradient(
-                      colors:
-                          widget.isDark
-                              ? [AppColors.neonCyan, AppColors.neonPurple]
-                              : [
-                                AppColors.brandDeepGold,
-                                AppColors.brandWarmOrange,
-                              ],
-                    ).createShader(const Rect.fromLTWH(0, 0, 300, 20)),
+    return Padding(
+      padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,  // Take only needed space
+        children: [
+          // We'll use Flexible instead of Spacer for better control
+          Flexible(
+            flex: 1,
+            child: Container(),
+          ),
+          
+          // Feature illustration - with adaptive sizing
+          SizedBox(
+            height: isSmallScreen ? 110 : 140,
+            child: _buildFeatureIllustration(isDark, iconData),
+          ),
+          
+          SizedBox(height: isSmallScreen ? 20 : 40),
+          
+          // Title - with shadow
+          Text(
+            title,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(  // Smaller text size
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.neutralDarkGray,
+              shadows: [
+                Shadow(
+                  blurRadius: 2,
+                  color: isDark 
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.2),
+                  offset: const Offset(0, 1),
+                )
+              ],
             ),
             textAlign: TextAlign.center,
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'AI-curated medical learning, tailored to you',
-          style: widget.textTheme.titleMedium?.copyWith(
-            color:
-                widget.isDark ? AppColors.neonCyan : AppColors.neutralDarkGray,
-            fontWeight: FontWeight.w300,
-          ),
-        ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: _textController.value,
-          backgroundColor: Colors.transparent,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            widget.isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-          ),
-          minHeight: 2,
-        ),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    _textController.dispose();
-    super.dispose();
-  }
-}
-
-class _NeonButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _NeonButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 40),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: LinearGradient(
-          colors:
-              isDark
-                  ? [AppColors.neonPurple, AppColors.neonCyan]
-                  : [AppColors.brandWarmOrange, AppColors.brandDeepGold],
-        ),
-        boxShadow: [
-          if (isDark)
-            BoxShadow(
-              color: AppColors.neonCyan.withOpacity(0.3),
-              blurRadius: 20,
-              spreadRadius: 2,
+          
+          const SizedBox(height: 16),
+          
+          // Subtitle - with constrained height
+          Container(
+            constraints: BoxConstraints(maxHeight: isSmallScreen ? 60 : 80),
+            child: Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(  // Smaller text size
+                color: isDark ? Colors.white70 : AppColors.neutralDarkGray.withOpacity(0.7),
+                height: 1.4,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: isSmallScreen ? 3 : 4,
+              overflow: TextOverflow.ellipsis,
             ),
+          ),
+          
+          // Use Flexible instead of Spacer to allow content to compress if needed
+          Flexible(
+            flex: 2,
+            child: Container(),
+          ),
         ],
       ),
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 32),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+    );
+  }
+
+  // Also update the feature illustration to be more adaptive
+  Widget _buildFeatureIllustration(bool isDark, IconData iconData) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxSize = constraints.maxHeight;
+        final innerSize = maxSize * 0.7;  // Adaptive inner container size
+        
+        return Container(
+          width: maxSize,
+          height: maxSize,
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              colors: isDark 
+                ? [
+                    AppColors.greenTeal.withOpacity(0.15),
+                    AppColors.deepTeal.withOpacity(0.05),
+                  ]
+                : [
+                    AppColors.brandOrange.withOpacity(0.15),
+                    AppColors.brandDeepOrange.withOpacity(0.05),
+                  ],
+              radius: 0.8,
+            ),
+            shape: BoxShape.circle,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Get Started',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.darkBg : Colors.white,
+          child: Center(
+            child: Container(
+              width: innerSize,
+              height: innerSize,
+              padding: EdgeInsets.all(innerSize * 0.2),  // Adaptive padding
+              decoration: BoxDecoration(
+                color: isDark 
+                  ? Color.lerp(AppColors.darkBg, Colors.black, 0.3)?.withOpacity(0.85)
+                  : Colors.white.withOpacity(0.85),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark 
+                      ? AppColors.greenTeal.withOpacity(0.15)
+                      : AppColors.brandOrange.withOpacity(0.15),
+                    blurRadius: 25,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: ShaderMask(
+                blendMode: BlendMode.srcIn,
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: isDark 
+                    ? [AppColors.greenTeal, AppColors.deepGreenTeal]
+                    : [AppColors.brandOrange, AppColors.brandDeepOrange],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ).createShader(bounds),
+                child: Icon(
+                  iconData,
+                  size: innerSize * 0.6,  // Adaptive icon size
+                ),
               ),
             ),
-            const SizedBox(width: 12),
-            Icon(
-              Icons.arrow_forward_rounded,
-              size: 20,
-              color: isDark ? AppColors.darkBg : Colors.white,
+          ),
+        );
+      }
+    );
+  }
+  
+  Widget _customButton({
+    required bool isDark, 
+    required String label, 
+    required IconData icon, 
+    required VoidCallback onPressed
+  }) {
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark 
+            ? [AppColors.greenTeal, AppColors.deepGreenTeal]
+            : [AppColors.brandOrange, AppColors.brandDeepOrange],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: isDark 
+              ? AppColors.greenTeal.withOpacity(0.25)
+              : AppColors.brandOrange.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(28),
+          onTap: onPressed,
+          splashColor: Colors.white24,
+          highlightColor: Colors.white10,
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-class AnimatedParticleField extends StatefulWidget {
-  final List<Color> colors;
-  final AnimationController controller;
-
-  const AnimatedParticleField({
-    super.key,
-    required this.colors,
-    required this.controller,
-  });
-
-  @override
-  _AnimatedParticleFieldState createState() => _AnimatedParticleFieldState();
-}
-
-class _AnimatedParticleFieldState extends State<AnimatedParticleField> {
-  final List<Particle> particles = [];
-  bool _isInitialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_updateParticles);
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_isInitialized) {
-      _initializeParticles();
-      _isInitialized = true;
-    }
-  }
-
-  void _initializeParticles() {
-    particles.clear();
-    final size = MediaQuery.of(context).size;
-    for (var i = 0; i < 50; i++) {
-      particles.add(
-        Particle(
-          color: widget.colors[i % widget.colors.length],
-          screenSize: size,
-        ),
-      );
-    }
-  }
-
-  void _updateParticles() {
-    setState(() {
-      for (final particle in particles) {
-        particle.update();
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _ParticlePainter(particles: particles));
-  }
-}
-
-class Particle {
-  final Color color;
-  Offset position;
-  final double speed;
-  final double angle;
-  final double size;
-  final double opacity;
-
-  Particle({required this.color, required Size screenSize})
-    : position = Offset(
-        Random().nextDouble() * screenSize.width,
-        Random().nextDouble() * screenSize.height,
-      ),
-      speed = Random().nextDouble() * 0.5 + 0.2,
-      angle = Random().nextDouble() * 2 * pi,
-      size = Random().nextDouble() * 2 + 1,
-      opacity = Random().nextDouble() * 0.5 + 0.2;
-
-  void update() {
-    position += Offset(sin(angle) * speed, cos(angle) * speed);
-  }
-}
-
-class _ParticlePainter extends CustomPainter {
-  final List<Particle> particles;
-
-  _ParticlePainter({required this.particles});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final particle in particles) {
-      final paint =
-          Paint()
-            ..color = particle.color.withOpacity(particle.opacity)
-            ..style = PaintingStyle.fill;
-
-      canvas.drawCircle(particle.position, particle.size, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

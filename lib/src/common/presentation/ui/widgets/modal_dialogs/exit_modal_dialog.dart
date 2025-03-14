@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
+import 'package:novelnooks/src/common/common.dart';
 
 class ExitModalDialog extends StatelessWidget {
   const ExitModalDialog({super.key});

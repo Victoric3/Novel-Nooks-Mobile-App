@@ -3,7 +3,4 @@ export 'auth/screens/sign_up.dart';
 export 'splash/splash.dart';
 export 'tabs/tabs.dart';
 export 'home/home.dart';
-export 'community/community.dart';
-export 'create/create.dart';
 export 'library/library.dart';
-export 'schedule/schedule.dart';

@@ -21,16 +21,39 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthScreen(),
       );
     },
-    CommunityRoute.name: (routeData) {
+    DocumentViewerRoute.name: (routeData) {
+      final args = routeData.argsAs<DocumentViewerRouteArgs>();
       return AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: const CommunityScreen(),
+        child: DocumentViewerScreen(
+          key: args.key,
+          fileUrl: args.fileUrl,
+          title: args.title,
+          fileType: args.fileType,
+          ebookId: args.ebookId,
+          page: args.page,
+        ),
       );
     },
-    CreateRoute.name: (routeData) {
+    EbookDetailRoute.name: (routeData) {
+      final args = routeData.argsAs<EbookDetailRouteArgs>();
       return AutoRoutePage<dynamic>(
         routeData: routeData,
-        child: const CreateScreen(),
+        child: EbookDetailScreen(
+          key: args.key,
+          id: args.id,
+          slug: args.slug,
+        ),
+      );
+    },
+    EbookReaderRoute.name: (routeData) {
+      final args = routeData.argsAs<EbookReaderRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: EbookReaderScreen(
+          key: args.key,
+          ebookId: args.ebookId,
+        ),
       );
     },
     HomeRoute.name: (routeData) {
@@ -51,16 +74,16 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const LibraryScreen(),
       );
     },
+    MeRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const MeScreen(),
+      );
+    },
     ResetPasswordRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
         child: const ResetPasswordScreen(),
-      );
-    },
-    ScheduleRoute.name: (routeData) {
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: const ScheduleScreen(),
       );
     },
     SignInRoute.name: (routeData) {
@@ -123,31 +146,142 @@ class AuthRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [CommunityScreen]
-class CommunityRoute extends PageRouteInfo<void> {
-  const CommunityRoute({List<PageRouteInfo>? children})
-      : super(
-          CommunityRoute.name,
+/// [DocumentViewerScreen]
+class DocumentViewerRoute extends PageRouteInfo<DocumentViewerRouteArgs> {
+  DocumentViewerRoute({
+    Key? key,
+    required String fileUrl,
+    required String title,
+    String? fileType,
+    required String ebookId,
+    int? page,
+    List<PageRouteInfo>? children,
+  }) : super(
+          DocumentViewerRoute.name,
+          args: DocumentViewerRouteArgs(
+            key: key,
+            fileUrl: fileUrl,
+            title: title,
+            fileType: fileType,
+            ebookId: ebookId,
+            page: page,
+          ),
           initialChildren: children,
         );
 
-  static const String name = 'CommunityRoute';
+  static const String name = 'DocumentViewerRoute';
 
-  static const PageInfo<void> page = PageInfo<void>(name);
+  static const PageInfo<DocumentViewerRouteArgs> page =
+      PageInfo<DocumentViewerRouteArgs>(name);
+}
+
+class DocumentViewerRouteArgs {
+  const DocumentViewerRouteArgs({
+    this.key,
+    required this.fileUrl,
+    required this.title,
+    this.fileType,
+    required this.ebookId,
+    this.page,
+  });
+
+  final Key? key;
+
+  final String fileUrl;
+
+  final String title;
+
+  final String? fileType;
+
+  final String ebookId;
+
+  final int? page;
+
+  @override
+  String toString() {
+    return 'DocumentViewerRouteArgs{key: $key, fileUrl: $fileUrl, title: $title, fileType: $fileType, ebookId: $ebookId, page: $page}';
+  }
 }
 
 /// generated route for
-/// [CreateScreen]
-class CreateRoute extends PageRouteInfo<void> {
-  const CreateRoute({List<PageRouteInfo>? children})
-      : super(
-          CreateRoute.name,
+/// [EbookDetailScreen]
+class EbookDetailRoute extends PageRouteInfo<EbookDetailRouteArgs> {
+  EbookDetailRoute({
+    Key? key,
+    required String id,
+    String? slug,
+    List<PageRouteInfo>? children,
+  }) : super(
+          EbookDetailRoute.name,
+          args: EbookDetailRouteArgs(
+            key: key,
+            id: id,
+            slug: slug,
+          ),
           initialChildren: children,
         );
 
-  static const String name = 'CreateRoute';
+  static const String name = 'EbookDetailRoute';
 
-  static const PageInfo<void> page = PageInfo<void>(name);
+  static const PageInfo<EbookDetailRouteArgs> page =
+      PageInfo<EbookDetailRouteArgs>(name);
+}
+
+class EbookDetailRouteArgs {
+  const EbookDetailRouteArgs({
+    this.key,
+    required this.id,
+    this.slug,
+  });
+
+  final Key? key;
+
+  final String id;
+
+  final String? slug;
+
+  @override
+  String toString() {
+    return 'EbookDetailRouteArgs{key: $key, id: $id, slug: $slug}';
+  }
+}
+
+/// generated route for
+/// [EbookReaderScreen]
+class EbookReaderRoute extends PageRouteInfo<EbookReaderRouteArgs> {
+  EbookReaderRoute({
+    Key? key,
+    required String ebookId,
+    List<PageRouteInfo>? children,
+  }) : super(
+          EbookReaderRoute.name,
+          args: EbookReaderRouteArgs(
+            key: key,
+            ebookId: ebookId,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'EbookReaderRoute';
+
+  static const PageInfo<EbookReaderRouteArgs> page =
+      PageInfo<EbookReaderRouteArgs>(name);
+}
+
+class EbookReaderRouteArgs {
+  const EbookReaderRouteArgs({
+    this.key,
+    required this.ebookId,
+  });
+
+  final Key? key;
+
+  final String ebookId;
+
+  @override
+  String toString() {
+    return 'EbookReaderRouteArgs{key: $key, ebookId: $ebookId}';
+  }
 }
 
 /// generated route for
@@ -193,6 +327,20 @@ class LibraryRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [MeScreen]
+class MeRoute extends PageRouteInfo<void> {
+  const MeRoute({List<PageRouteInfo>? children})
+      : super(
+          MeRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'MeRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
 /// [ResetPasswordScreen]
 class ResetPasswordRoute extends PageRouteInfo<void> {
   const ResetPasswordRoute({List<PageRouteInfo>? children})
@@ -202,20 +350,6 @@ class ResetPasswordRoute extends PageRouteInfo<void> {
         );
 
   static const String name = 'ResetPasswordRoute';
-
-  static const PageInfo<void> page = PageInfo<void>(name);
-}
-
-/// generated route for
-/// [ScheduleScreen]
-class ScheduleRoute extends PageRouteInfo<void> {
-  const ScheduleRoute({List<PageRouteInfo>? children})
-      : super(
-          ScheduleRoute.name,
-          initialChildren: children,
-        );
-
-  static const String name = 'ScheduleRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }

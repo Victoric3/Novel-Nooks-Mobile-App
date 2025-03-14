@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:eulaiq/src/common/theme/app_theme.dart';
+import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
+import 'package:novelnooks/src/common/common.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'dart:ui';
@@ -12,16 +12,14 @@ class TabsScreenSmall extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    Theme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return AutoTabsRouter(
       routes: const [
         HomeRoute(),
         LibraryRoute(),
-        ScheduleRoute(),
-        CreateRoute(),
-        CommunityRoute(),
+        MeRoute(),
       ],
       transitionBuilder: (context, child, animation) => FadeTransition(
         opacity: animation,
@@ -87,10 +85,8 @@ class TabsScreenSmall extends ConsumerWidget {
                   unselectedFontSize: 11,
                   items: <BottomNavigationBarItem>[
                     _buildNavItem(MdiIcons.homeVariant, 'Home', tabsRouter.activeIndex == 0, isDark),
-                    _buildNavItem(MdiIcons.bookshelf, 'Library', tabsRouter.activeIndex == 1, isDark),
-                    _buildNavItem(MdiIcons.plusCircle, 'Create', tabsRouter.activeIndex == 2, isDark, isCreate: true),
-                    _buildNavItem(MdiIcons.calendarText, 'Schedule', tabsRouter.activeIndex == 3, isDark),
-                    _buildNavItem(MdiIcons.accountGroup, 'Community', tabsRouter.activeIndex == 4, isDark),
+                    _buildNavItem(MdiIcons.compass, 'Explore', tabsRouter.activeIndex == 1, isDark),
+                    _buildNavItem(MdiIcons.account, 'Me', tabsRouter.activeIndex == 2, isDark),
                   ],
                   currentIndex: tabsRouter.activeIndex,
                   onTap: tabsRouter.setActiveIndex,
@@ -103,7 +99,7 @@ class TabsScreenSmall extends ConsumerWidget {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label, bool isActive, bool isDark, {bool isCreate = false}) {
+  BottomNavigationBarItem _buildNavItem(IconData icon, String label, bool isActive, bool isDark) {
     return BottomNavigationBarItem(
       icon: Container(
         height: 32,
@@ -111,25 +107,7 @@ class TabsScreenSmall extends ConsumerWidget {
         margin: const EdgeInsets.only(bottom: 4),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          decoration: isCreate ? BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [AppColors.neonCyan, AppColors.neonPurple]
-                  : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: isDark 
-                  ? AppColors.neonCyan.withOpacity(0.3)
-                  : AppColors.brandDeepGold.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 2,
-              ),
-            ],
-          ) : isActive ? BoxDecoration(
+          decoration: isActive ? BoxDecoration(
             color: isDark
                 ? AppColors.neonCyan.withOpacity(0.15)
                 : AppColors.brandDeepGold.withOpacity(0.15),
@@ -138,11 +116,9 @@ class TabsScreenSmall extends ConsumerWidget {
           child: Icon(
             icon,
             size: isActive ? 24 : 20,
-            color: isCreate 
-                ? Colors.white
-                : isActive
-                    ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-                    : null,
+            color: isActive
+                ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                : null,
           ),
         ),
       ),

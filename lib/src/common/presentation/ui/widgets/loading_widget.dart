@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
+import 'package:novelnooks/src/common/common.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class LoadingWidget extends StatelessWidget {

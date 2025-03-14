@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "481620385308",
-    "project_id": "eulaiqapp",
-    "storage_bucket": "eulaiqapp.firebasestorage.app"
+    "project_number": "804161081670",
+    "project_id": "novel-nooks-e1d16",
+    "storage_bucket": "novel-nooks-e1d16.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:481620385308:android:92bef593d32a2cc10409d9",
+        "mobilesdk_app_id": "1:804161081670:android:3eafd9c394966ebf2c9547",
         "android_client_info": {
-          "package_name": "com.eulaiq.app"
+          "package_name": "com.novelnooks.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "481620385308-h042g0r2ium0uukgjsasdebfv2vh7u24.apps.googleusercontent.com",
+          "client_id": "804161081670-s82il3jdcdqthrk0i53n1emohfh01sgk.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.eulaiq.app",
+            "package_name": "com.novelnooks.app",
             "certificate_hash": "7da79de3a6611e499d94bd92afffd7454c0f19bb"
           }
         },
         {
-          "client_id": "481620385308-50k8v2a7idv5e9hdjrujgdgg5ltcqqbj.apps.googleusercontent.com",
+          "client_id": "804161081670-df985j7rgdcp4jcvcj72hm228dn4cvf5.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDnfV32Pa3WM-hI9Cf_uKdL9F_tzFpKq8Y"
+          "current_key": "AIzaSyD-gJKLH89_l8YbM-9i8LKtvgPZiHOpwFc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "481620385308-50k8v2a7idv5e9hdjrujgdgg5ltcqqbj.apps.googleusercontent.com",
+              "client_id": "804161081670-df985j7rgdcp4jcvcj72hm228dn4cvf5.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

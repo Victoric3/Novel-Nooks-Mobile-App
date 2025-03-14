@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  // Brand Colors
-  static const brandDeepGold = Color(0xFFB18958);
-  static const brandWarmOrange = Color(0xFFD97706);
+  // Brand Colors - New Palette
+  static const brandOrange = Color(0xFFE77503);
+  static const brandDeepOrange = Color(0xFFC33608);
+  
+  // Green Gradient Colors
+  static const greenLime = Color(0xFF8EB123);
+  static const greenTeal = Color(0xFF23A88B);
+  static const deepTeal = Color(0xFF148686);
+  static const deepGreenTeal = Color(0xFF148A68);
+  static const mediumGreen = Color(0xFF4EA244);
 
   // Neutral Colors
   static const neutralLightGray = Color(0xFFF3F4F6);
@@ -17,20 +24,24 @@ class AppColors {
   static const textPrimary = Color(0xFFF8F9FA);
   static const textDark = Color(0xFF2D2D2D);
 
-  // Accent Colors
-  static const neonCyan = Color(0xFF00F3FF);
-  static const neonPurple = Color(0xFFBC00FF);
-
+  // Legacy color names kept for compatibility
+  // These now point to the new color palette
+  static const brandDeepGold = brandDeepOrange;
+  static const brandWarmOrange = brandOrange;
+  static const neonCyan = greenTeal;
+  static const neonPurple = deepTeal;
+  
   // Card Colors
-  static const darkBgCard = Color(0x1A00F3FF);
+  static const darkBgCard = Color(0x1A23A88B); // Using greenTeal with opacity
 }
 
 class AppTheme {
   static ThemeData get lightTheme => ThemeData(
-        primaryColor: AppColors.brandDeepGold,
+        primaryColor: AppColors.brandOrange,
         colorScheme: ColorScheme.light(
-          primary: AppColors.brandDeepGold,
-          secondary: AppColors.brandWarmOrange,
+          primary: AppColors.brandOrange,
+          secondary: AppColors.brandDeepOrange,
+          tertiary: AppColors.greenLime,
           background: AppColors.neutralLightGray,
           surface: AppColors.neutralLightGray,
           onPrimary: AppColors.textPrimary,

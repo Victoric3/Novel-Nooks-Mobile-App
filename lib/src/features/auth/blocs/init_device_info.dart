@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:eulaiq/src/common/common.dart';
+import 'package:novelnooks/src/common/common.dart';
 import 'package:http/http.dart' as http;
-import 'package:eulaiq/src/common/services/firebase_messaging_service.dart';
+import 'package:novelnooks/src/common/services/firebase_messaging_service.dart';
 
 class DeviceInfoService {
   String ipAddress = '';

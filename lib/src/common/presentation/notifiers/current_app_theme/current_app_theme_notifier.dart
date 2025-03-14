@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
+import 'package:novelnooks/src/common/common.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'current_app_theme_notifier.g.dart';

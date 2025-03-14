@@ -1,9 +1,9 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:eulaiq/src/common/constants/global_state.dart';
+import 'package:novelnooks/src/common/constants/global_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:eulaiq/src/common/theme/app_theme.dart';
-import 'package:eulaiq/src/features/auth/blocs/verify_code.dart';
+import 'package:novelnooks/src/common/theme/app_theme.dart';
+import 'package:novelnooks/src/features/auth/blocs/verify_code.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 
 @RoutePage()

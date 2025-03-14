@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
-import 'package:eulaiq/src/features/features.dart';
+import 'package:novelnooks/src/common/common.dart';
+import 'package:novelnooks/src/features/features.dart';
 import 'package:flutter_icons/flutter_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

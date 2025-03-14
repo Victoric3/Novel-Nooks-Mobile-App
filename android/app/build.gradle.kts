@@ -6,9 +6,9 @@ plugins {
 }
 
 android {
-    namespace = "com.eulaiq.app"
+    namespace = "com.novelnooks.app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -21,7 +21,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.eulaiq.app"
+        applicationId = "com.novelnooks.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

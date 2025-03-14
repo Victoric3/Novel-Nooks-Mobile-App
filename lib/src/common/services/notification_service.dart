@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:eulaiq/src/common/widgets/notification_card.dart';
+import 'package:novelnooks/src/common/widgets/notification_card.dart';
 
 class NotificationService extends ChangeNotifier {
   final List<NotificationCard> _notifications = [];

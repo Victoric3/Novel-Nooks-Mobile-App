@@ -1,15 +1,17 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
-import 'package:eulaiq/src/common/providers/device_info_provider.dart';
-import 'package:eulaiq/src/common/services/google_auth_service.dart';
-import 'package:eulaiq/src/common/services/notification_service.dart';
-import 'package:eulaiq/src/common/widgets/notification_card.dart';
-import 'package:eulaiq/src/features/auth/blocs/verify_code.dart';
+import 'package:novelnooks/src/common/providers/device_info_provider.dart';
+import 'package:novelnooks/src/common/services/google_auth_service.dart';
+import 'package:novelnooks/src/common/services/notification_service.dart';
+import 'package:novelnooks/src/common/widgets/notification_card.dart';
+import 'package:novelnooks/src/features/auth/blocs/verify_code.dart';
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
-import 'package:eulaiq/src/common/constants/dio_config.dart';
-import 'package:eulaiq/src/common/constants/global_state.dart';
+import 'package:novelnooks/src/common/common.dart';
+import 'package:novelnooks/src/common/constants/dio_config.dart';
+import 'package:novelnooks/src/common/constants/global_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/user_provider.dart';
+
 
 class SignInState extends ChangeNotifier {
   final emailRegExp = RegExp(
@@ -17,7 +19,7 @@ class SignInState extends ChangeNotifier {
   );
 
   String _email = '';
-  String _password = '';
+  String password = '';
   String _firstname = '';
   String _lastname = '';
   final List<String> interests = [];
@@ -26,6 +28,7 @@ class SignInState extends ChangeNotifier {
 
   bool get passwordVisibility => _passwordVisible;
   bool get continueButtonEnabled => _continue;
+
 
   void togglePasswordVisibility() {
     _passwordVisible = !_passwordVisible;
@@ -36,11 +39,11 @@ class SignInState extends ChangeNotifier {
     if (fieldName == 'email') {
       _email = value;
     } else if (fieldName == 'password') {
-      _password = value;
+      password = value;
     }
 
     final bool isValidEmail = emailRegExp.hasMatch(_email);
-    final bool isValidPassword = _password.isNotEmpty;
+    final bool isValidPassword = password.isNotEmpty;
 
     _continue = isValidEmail && isValidPassword;
     notifyListeners();
@@ -69,10 +72,10 @@ class SignInState extends ChangeNotifier {
       final notificationService = ref.read(notificationServiceProvider);
 
       final response = await DioConfig.dio?.post(
-        '/auth/login',
+        '/user/login',
         data: {
           'identity': _email.trim(),
-          'password': _password.trim(),
+          'password': password.trim(),
           'ipAddress': deviceInfoService.ipAddress,
           'device': deviceInfoService.deviceInfo,
         },
@@ -82,7 +85,10 @@ class SignInState extends ChangeNotifier {
       if (response?.statusCode == 200) {
         ref.read(loadingProvider.notifier).state = false;
         ref.read(statusCodeProvider.notifier).state = 200;
-
+        
+        // Refresh user data after login
+        await ref.read(userProvider.notifier).refreshUser();
+        
         notificationService.showNotification(
           message: responseData['message'] as String? ?? 'Login successful',
           type: NotificationType.success,
@@ -137,12 +143,12 @@ class SignInState extends ChangeNotifier {
       await deviceInfoService.initDeviceInfo();
 
       final response = await DioConfig.dio?.post(
-        '/auth/register',
+        '/user/register',
         data: {
           'firstname': _firstname,
           'lastname': _lastname,
           'email': _email.trim(),
-          'password': _password.trim(),
+          'password': password.trim(),
           'ipAddress': deviceInfoService.ipAddress,
           'deviceInfo': deviceInfoService.deviceInfo,
           'anonymousId': null,
@@ -200,7 +206,7 @@ class SignInState extends ChangeNotifier {
       await deviceInfoService.initDeviceInfo();
 
       final response = await DioConfig.dio?.post(
-        '/auth/anonymous',
+        '/user/anonymous',
         data: {
           'deviceInfo': deviceInfoService.deviceInfo,
           'ipAddress': deviceInfoService.ipAddress,
@@ -209,6 +215,10 @@ class SignInState extends ChangeNotifier {
 
       if (response?.statusCode == 200) {
         ref.read(guestSignInLoadingProvider.notifier).state = false;
+        
+        // Refresh user data after login
+        await ref.read(userProvider.notifier).refreshUser();
+        
         notificationService.showNotification(
           message: response?.data['message'] as String? ?? 'Welcome!',
           type: NotificationType.success,
@@ -263,7 +273,7 @@ class SignInState extends ChangeNotifier {
       await deviceInfoService.initDeviceInfo();
 
       final response = await DioConfig.dio?.post(
-        '/auth/googleSignIn',
+        '/user/googleSignIn',
         data: {
           'idToken': googleData['idToken'],
           'deviceInfo': deviceInfoService.deviceInfo,
@@ -273,6 +283,10 @@ class SignInState extends ChangeNotifier {
 
       if (response?.statusCode == 200 || response?.statusCode == 201) {
         ref.read(googleSignInLoadingProvider.notifier).state = false;
+        
+        // Refresh user data after login
+        await ref.read(userProvider.notifier).refreshUser();
+        
         notificationService.showNotification(
           message: response?.data['message'] as String? ?? 'Welcome!',
           type: NotificationType.success,
@@ -334,6 +348,23 @@ class SignInState extends ChangeNotifier {
             message: 'An unexpected error occurred during Google Sign In',
             type: NotificationType.error,
           );
+    }
+  }
+
+  Future<void> signOut(BuildContext context, WidgetRef ref) async {
+    try {
+      // Call your API to invalidate token
+      // final response = 
+      await DioConfig.dio?.post('/user/logout');
+      
+      // Clear user data locally
+      await ref.read(userProvider.notifier).clearUser();
+      
+      if (context.mounted) {
+        context.router.replace(const AuthRoute());
+      }
+    } catch (error) {
+      // Handle error
     }
   }
 }

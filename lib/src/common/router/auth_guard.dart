@@ -1,6 +1,6 @@
 import 'package:auto_route/auto_route.dart';
-import 'package:eulaiq/src/common/common.dart';
-import 'package:eulaiq/src/common/services/auth_service.dart';
+import 'package:novelnooks/src/common/common.dart';
+import 'package:novelnooks/src/common/services/auth_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AuthGuard extends AutoRouteGuard {
@@ -18,6 +18,7 @@ class AuthGuard extends AutoRouteGuard {
       if (isAuth) {
         resolver.next(true);
       } else {
+        // Use IntroRoute instead of a welcome page as it seems to be your entry point
         router.push(const IntroRoute());
         resolver.next(false);
       }

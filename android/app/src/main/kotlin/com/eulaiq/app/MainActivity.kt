@@ -1,4 +1,4 @@
-package com.eulaiq.app
+package com.novelnooks.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,12 +1,12 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:dio/dio.dart';
-import 'package:eulaiq/src/common/providers/device_info_provider.dart';
-import 'package:eulaiq/src/common/services/notification_service.dart';
-import 'package:eulaiq/src/common/widgets/notification_card.dart';
+import 'package:novelnooks/src/common/providers/device_info_provider.dart';
+import 'package:novelnooks/src/common/services/notification_service.dart';
+import 'package:novelnooks/src/common/widgets/notification_card.dart';
 import 'package:flutter/material.dart';
-import 'package:eulaiq/src/common/common.dart';
-import 'package:eulaiq/src/common/constants/dio_config.dart';
-import 'package:eulaiq/src/common/constants/global_state.dart';
+import 'package:novelnooks/src/common/common.dart';
+import 'package:novelnooks/src/common/constants/dio_config.dart';
+import 'package:novelnooks/src/common/constants/global_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum VerificationType {
@@ -74,7 +74,7 @@ class VerifyCode extends ChangeNotifier {
       ref.read(loadingProvider.notifier).state = true;
       
       final response = await DioConfig.dio?.patch(
-        '/auth/confirmEmailAndSignUp',
+        '/user/confirmEmailAndSignUp',
         data: {
           'token': _verificationToken,
           'deviceInfo': deviceInfo.deviceInfo,
@@ -106,7 +106,7 @@ class VerifyCode extends ChangeNotifier {
       final deviceInfo = ref.read(deviceInfoProvider);
       
       final response = await DioConfig.dio?.patch(
-        '/auth/unUsualSignIn',
+        '/user/unUsualSignIn',
         data: {
           'token': _verificationToken,
           'ipAddress': deviceInfo.ipAddress,
@@ -134,7 +134,7 @@ class VerifyCode extends ChangeNotifier {
       notifyListeners();
 
       final response = await DioConfig.dio?.post(
-        '/auth/resendVerificationToken',
+        '/user/resendVerificationToken',
         data: {'email': email},
       );
 
@@ -164,7 +164,7 @@ class VerifyCode extends ChangeNotifier {
     final notificationService = ref.read(notificationServiceProvider);
 
     final response = await DioConfig.dio?.post(
-      '/auth/forgotpassword',
+      '/user/forgotpassword',
       data: {'email': email},
     );
 
@@ -226,7 +226,7 @@ class VerifyCode extends ChangeNotifier {
     ref.read(loadingProvider.notifier).state = true;
     
     final response = await DioConfig.dio?.put(
-      '/auth/resetpassword',
+      '/user/resetpassword',
       data: {
         'resetPasswordToken': _verificationToken,
         'newPassword': _newPassword,
