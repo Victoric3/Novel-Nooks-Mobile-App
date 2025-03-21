@@ -21,20 +21,6 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthScreen(),
       );
     },
-    DocumentViewerRoute.name: (routeData) {
-      final args = routeData.argsAs<DocumentViewerRouteArgs>();
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: DocumentViewerScreen(
-          key: args.key,
-          fileUrl: args.fileUrl,
-          title: args.title,
-          fileType: args.fileType,
-          ebookId: args.ebookId,
-          page: args.page,
-        ),
-      );
-    },
     EbookDetailRoute.name: (routeData) {
       final args = routeData.argsAs<EbookDetailRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -43,16 +29,7 @@ abstract class _$AppRouter extends RootStackRouter {
           key: args.key,
           id: args.id,
           slug: args.slug,
-        ),
-      );
-    },
-    EbookReaderRoute.name: (routeData) {
-      final args = routeData.argsAs<EbookReaderRouteArgs>();
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: EbookReaderScreen(
-          key: args.key,
-          ebookId: args.ebookId,
+          ebook: args.ebook,
         ),
       );
     },
@@ -80,10 +57,31 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const MeScreen(),
       );
     },
+    ReaderRoute.name: (routeData) {
+      final args = routeData.argsAs<ReaderRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: ReaderScreen(
+          key: args.key,
+          storyId: args.storyId,
+          title: args.title,
+          isFree: args.isFree,
+          contentCount: args.contentCount,
+          pricePerChapter: args.pricePerChapter,
+          completed: args.completed,
+        ),
+      );
+    },
     ResetPasswordRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
         child: const ResetPasswordScreen(),
+      );
+    },
+    SearchRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const SearchScreen(),
       );
     },
     SignInRoute.name: (routeData) {
@@ -146,70 +144,13 @@ class AuthRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [DocumentViewerScreen]
-class DocumentViewerRoute extends PageRouteInfo<DocumentViewerRouteArgs> {
-  DocumentViewerRoute({
-    Key? key,
-    required String fileUrl,
-    required String title,
-    String? fileType,
-    required String ebookId,
-    int? page,
-    List<PageRouteInfo>? children,
-  }) : super(
-          DocumentViewerRoute.name,
-          args: DocumentViewerRouteArgs(
-            key: key,
-            fileUrl: fileUrl,
-            title: title,
-            fileType: fileType,
-            ebookId: ebookId,
-            page: page,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'DocumentViewerRoute';
-
-  static const PageInfo<DocumentViewerRouteArgs> page =
-      PageInfo<DocumentViewerRouteArgs>(name);
-}
-
-class DocumentViewerRouteArgs {
-  const DocumentViewerRouteArgs({
-    this.key,
-    required this.fileUrl,
-    required this.title,
-    this.fileType,
-    required this.ebookId,
-    this.page,
-  });
-
-  final Key? key;
-
-  final String fileUrl;
-
-  final String title;
-
-  final String? fileType;
-
-  final String ebookId;
-
-  final int? page;
-
-  @override
-  String toString() {
-    return 'DocumentViewerRouteArgs{key: $key, fileUrl: $fileUrl, title: $title, fileType: $fileType, ebookId: $ebookId, page: $page}';
-  }
-}
-
-/// generated route for
 /// [EbookDetailScreen]
 class EbookDetailRoute extends PageRouteInfo<EbookDetailRouteArgs> {
   EbookDetailRoute({
     Key? key,
     required String id,
     String? slug,
+    required EbookModel ebook,
     List<PageRouteInfo>? children,
   }) : super(
           EbookDetailRoute.name,
@@ -217,6 +158,7 @@ class EbookDetailRoute extends PageRouteInfo<EbookDetailRouteArgs> {
             key: key,
             id: id,
             slug: slug,
+            ebook: ebook,
           ),
           initialChildren: children,
         );
@@ -232,6 +174,7 @@ class EbookDetailRouteArgs {
     this.key,
     required this.id,
     this.slug,
+    required this.ebook,
   });
 
   final Key? key;
@@ -240,47 +183,11 @@ class EbookDetailRouteArgs {
 
   final String? slug;
 
-  @override
-  String toString() {
-    return 'EbookDetailRouteArgs{key: $key, id: $id, slug: $slug}';
-  }
-}
-
-/// generated route for
-/// [EbookReaderScreen]
-class EbookReaderRoute extends PageRouteInfo<EbookReaderRouteArgs> {
-  EbookReaderRoute({
-    Key? key,
-    required String ebookId,
-    List<PageRouteInfo>? children,
-  }) : super(
-          EbookReaderRoute.name,
-          args: EbookReaderRouteArgs(
-            key: key,
-            ebookId: ebookId,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'EbookReaderRoute';
-
-  static const PageInfo<EbookReaderRouteArgs> page =
-      PageInfo<EbookReaderRouteArgs>(name);
-}
-
-class EbookReaderRouteArgs {
-  const EbookReaderRouteArgs({
-    this.key,
-    required this.ebookId,
-  });
-
-  final Key? key;
-
-  final String ebookId;
+  final EbookModel ebook;
 
   @override
   String toString() {
-    return 'EbookReaderRouteArgs{key: $key, ebookId: $ebookId}';
+    return 'EbookDetailRouteArgs{key: $key, id: $id, slug: $slug, ebook: $ebook}';
   }
 }
 
@@ -341,6 +248,68 @@ class MeRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [ReaderScreen]
+class ReaderRoute extends PageRouteInfo<ReaderRouteArgs> {
+  ReaderRoute({
+    Key? key,
+    required String storyId,
+    required String title,
+    required bool isFree,
+    required int contentCount,
+    required double pricePerChapter,
+    required bool completed,
+    List<PageRouteInfo>? children,
+  }) : super(
+          ReaderRoute.name,
+          args: ReaderRouteArgs(
+            key: key,
+            storyId: storyId,
+            title: title,
+            isFree: isFree,
+            contentCount: contentCount,
+            pricePerChapter: pricePerChapter,
+            completed: completed,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'ReaderRoute';
+
+  static const PageInfo<ReaderRouteArgs> page = PageInfo<ReaderRouteArgs>(name);
+}
+
+class ReaderRouteArgs {
+  const ReaderRouteArgs({
+    this.key,
+    required this.storyId,
+    required this.title,
+    required this.isFree,
+    required this.contentCount,
+    required this.pricePerChapter,
+    required this.completed,
+  });
+
+  final Key? key;
+
+  final String storyId;
+
+  final String title;
+
+  final bool isFree;
+
+  final int contentCount;
+
+  final double pricePerChapter;
+
+  final bool completed;
+
+  @override
+  String toString() {
+    return 'ReaderRouteArgs{key: $key, storyId: $storyId, title: $title, isFree: $isFree, contentCount: $contentCount, pricePerChapter: $pricePerChapter, completed: $completed}';
+  }
+}
+
+/// generated route for
 /// [ResetPasswordScreen]
 class ResetPasswordRoute extends PageRouteInfo<void> {
   const ResetPasswordRoute({List<PageRouteInfo>? children})
@@ -350,6 +319,20 @@ class ResetPasswordRoute extends PageRouteInfo<void> {
         );
 
   static const String name = 'ResetPasswordRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [SearchScreen]
+class SearchRoute extends PageRouteInfo<void> {
+  const SearchRoute({List<PageRouteInfo>? children})
+      : super(
+          SearchRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'SearchRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }

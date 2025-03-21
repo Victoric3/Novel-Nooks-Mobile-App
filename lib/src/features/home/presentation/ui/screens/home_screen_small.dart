@@ -1,19 +1,167 @@
-import 'package:novelnooks/src/features/auth/data/models/user_model.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:auto_route/auto_route.dart';
-import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
-import 'dart:ui';
+import 'package:novelnooks/src/common/common.dart';
+import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:novelnooks/src/features/auth/providers/user_provider.dart';
+import 'package:novelnooks/src/features/library/data/models/ebook_model.dart';
+import 'package:novelnooks/src/features/library/presentation/providers/ebook_detail_provider.dart';
+import 'package:novelnooks/src/features/library/presentation/providers/library_provider.dart';
 
-// Change from autoDispose to regular provider to maintain state across reloads
+// Scroll controller provider
 final homeScrollControllerProvider = Provider((ref) {
   final controller = ScrollController();
-  ref.onDispose(() {
-    controller.dispose(); // Proper disposal when actually needed
-  });
+  ref.onDispose(() => controller.dispose());
   return controller;
+});
+
+// Active filter provider
+final activeFilterProvider = StateProvider<String>((ref) => 'For You');
+
+// Stories state and notifier for different sections
+class StoriesState {
+  final List<EbookModel> stories;
+  final int page;
+  final bool hasMore;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final bool hasError;
+  final String? errorMessage;
+
+  StoriesState({
+    required this.stories,
+    required this.page,
+    required this.hasMore,
+    required this.isLoading,
+    required this.isLoadingMore,
+    required this.hasError,
+    this.errorMessage,
+  });
+
+  factory StoriesState.initial() => StoriesState(
+        stories: [],
+        page: 0,
+        hasMore: true,
+        isLoading: false,
+        isLoadingMore: false,
+        hasError: false,
+      );
+
+  StoriesState copyWith({
+    List<EbookModel>? stories,
+    int? page,
+    bool? hasMore,
+    bool? isLoading,
+    bool? isLoadingMore,
+    bool? hasError,
+    String? errorMessage,
+  }) {
+    return StoriesState(
+      stories: stories ?? this.stories,
+      page: page ?? this.page,
+      hasMore: hasMore ?? this.hasMore,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasError: hasError ?? this.hasError,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+}
+
+class StoriesNotifier extends StateNotifier<StoriesState> {
+  final Ref ref;
+  String? section;
+  final Map<String, String?> additionalParams;
+
+  StoriesNotifier(this.ref, {this.section, this.additionalParams = const {}})
+      : super(StoriesState.initial()) {
+    fetchStories(refresh: true);
+  }
+
+  void updateSection(String newSection) {
+    section = newSection;
+    fetchStories(refresh: true);
+  }
+
+  Future<void> fetchStories({
+    bool refresh = false,
+    bool loadMore = false,
+  }) async {
+    if (state.isLoadingMore || (!refresh && !state.hasMore)) return;
+
+    final page = refresh ? 1 : state.page + 1;
+
+    state = state.copyWith(isLoading: refresh, isLoadingMore: loadMore);
+
+    try {
+      final result = await ref.read(libraryRepositoryProvider).fetchAllEbooks(
+            section: section,
+            page: page,
+            limit: section == 'hero' ? 5 : 10,
+            searchQuery: additionalParams['searchQuery'],
+            free: additionalParams['free'],
+          );
+
+      final newStories = (result['ebooks'] as List<EbookModel>);
+      final pagination = result['pagination'] as PaginationModel;
+      final currentPage = pagination.currentPage;
+      final hasMore = pagination.hasMore;
+
+      state = state.copyWith(
+        stories: refresh ? newStories : [...state.stories, ...newStories],
+        page: currentPage,
+        hasMore: hasMore,
+        isLoading: false,
+        isLoadingMore: false,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        isLoadingMore: false,
+        hasError: true,
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  void updateStory(EbookModel updatedStory) {
+    state = state.copyWith(
+      stories:
+          state.stories.map((s) => s.id == updatedStory.id ? updatedStory : s).toList(),
+    );
+  }
+}
+
+// Providers for different sections
+final heroStoriesProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'trending');
+});
+
+final recommendedStoriesProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'recommended');
+});
+
+final newReleasesProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'newReleases');
+});
+
+final topRatedProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'topRated');
+});
+
+final freeStoriesProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'free', additionalParams: {'free': 'true'});
+});
+
+final bestSellingProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'bestSelling');
+});
+
+final topCommentedProvider = StateNotifierProvider<StoriesNotifier, StoriesState>((ref) {
+  return StoriesNotifier(ref, section: 'topCommented');
 });
 
 @RoutePage()
@@ -25,600 +173,1094 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAliveClientMixin {
-  // Add AutomaticKeepAliveClientMixin to preserve state during tab navigation
   late ScrollController scrollController;
-  
+
   @override
   void initState() {
     super.initState();
-    // Get controller reference in initState instead of build
     scrollController = ref.read(homeScrollControllerProvider);
   }
-  
+
   @override
   void dispose() {
-    // Don't dispose the controller here as it's managed by the provider
     super.dispose();
   }
-  
+
+  Future<void> _refreshAllData() async {
+    ref.read(heroStoriesProvider.notifier).fetchStories(refresh: true);
+    await Future.wait([
+      Future(() => ref.read(recommendedStoriesProvider.notifier).fetchStories(refresh: true)),
+      Future(() => ref.read(newReleasesProvider.notifier).fetchStories(refresh: true)),
+      Future(() => ref.read(topRatedProvider.notifier).fetchStories(refresh: true)),
+      Future(() => ref.read(freeStoriesProvider.notifier).fetchStories(refresh: true)),
+      Future(() => ref.read(bestSellingProvider.notifier).fetchStories(refresh: true)),
+      Future(() => ref.read(topCommentedProvider.notifier).fetchStories(refresh: true)),
+    ]);
+  }
+
   @override
-  bool get wantKeepAlive => true; // Keep this widget alive
-  
+  bool get wantKeepAlive => true;
+
+  String getSectionTitle(String filter) {
+    switch (filter) {
+      case 'For You':
+        return 'Recommended For You';
+      case 'Trending':
+        return 'Trending Now';
+      case 'New':
+        return 'New Releases';
+      default:
+        return 'Featured $filter Books';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
-    
+    super.build(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final size = MediaQuery.of(context).size;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final viewPadding = MediaQuery.of(context).viewPadding;
-    
-    // Use watch just for the user state, not the controller
     final userState = ref.watch(userProvider);
-    
+
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: Container(
-        // Enhanced background matching auth screen style
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark 
-              ? [
-                  AppColors.darkBg,
-                  AppColors.darkBg.withOpacity(0.95),
-                  AppColors.darkBg.withOpacity(0.9),
-                ]
-              : [
-                  AppColors.neutralLightGray,
-                  Colors.white,
-                  AppColors.brandDeepGold.withOpacity(0.1),
-                ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [AppColors.darkBg, AppColors.neonCyan.withOpacity(0.1)]
+                : [Colors.white, AppColors.brandDeepGold.withOpacity(0.2)],
+            stops: const [0.0, 1.0],
           ),
         ),
-        // Ensure minimum height
-        constraints: BoxConstraints(
-          minHeight: size.height,
-        ),
-        child: CustomScrollView(
-          key: const PageStorageKey('homeScrollView'),
-          controller: scrollController, // Use the controller from initState
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            // Using SliverPersistentHeader with increased size
-            SliverPersistentHeader(
-              key: const ValueKey('homeHeader'),
-              pinned: true,
-              floating: true,
-              delegate: _HeaderDelegate(
-                isDark: isDark,
-                viewPadding: viewPadding,
-                headerMaxExtent: 220.0, // Increased to properly fit content
-                headerMinExtent: 210.0,  // Increased for better appearance when collapsed
-                user: userState.valueOrNull, // Pass user data to header
-              ),
-            ),
-            
-            // Content area with bottom padding for navigation bar
-            SliverPadding(
-              padding: EdgeInsets.only(bottom: 80 + bottomPadding),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Ensure we have at least minimal content to fill viewport
-                  SizedBox(
-                    height: size.height - 280 - bottomPadding,
-                    child: const Center(
+        child: RefreshIndicator(
+          onRefresh: _refreshAllData,
+          color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+          backgroundColor: isDark ? Colors.grey[850] : Colors.white,
+          displacement: 40.0,
+          edgeOffset: 0.0,
+          child: CustomScrollView(
+            key: const PageStorageKey('homeScrollView'),
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                pinned: true,
+                floating: false,
+                backgroundColor: isDark ? AppColors.darkBg : Colors.white,
+                elevation: 0,
+                title: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundImage: userState.valueOrNull?.photo != null &&
+                              userState.valueOrNull!.photo.isNotEmpty
+                          ? NetworkImage(userState.valueOrNull!.photo)
+                          : null,
+                      backgroundColor: isDark
+                          ? AppColors.neonCyan.withOpacity(0.2)
+                          : AppColors.brandDeepGold.withOpacity(0.2),
+                      child: userState.valueOrNull?.photo == null ||
+                              userState.valueOrNull!.photo.isEmpty
+                          ? Text(
+                              userState.valueOrNull?.firstname.isNotEmpty == true
+                                  ? userState.valueOrNull!.firstname[0].toUpperCase()
+                                  : 'N',
+                              style: TextStyle(
+                                color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
                       child: Text(
-                        'Content will be added here',
+                        userState.valueOrNull != null &&
+                                userState.valueOrNull!.firstname.isNotEmpty
+                            ? 'Hi, ${userState.valueOrNull!.firstname}'
+                            : 'Hi, Reader',
                         style: TextStyle(
-                          color: Colors.grey,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : AppColors.neutralDarkGray,
                         ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     ),
-                  ),
-                ]),
-              ),
-            ),
-          ],
-        ),
-      ),
-      
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(bottom: bottomPadding),
-        child: _buildAICopilotFAB(isDark),
-      ),
-    );
-  }
-
-  // Change this method to remove the Hero wrapper
-  Widget _buildAICopilotFAB(bool isDark) {
-    // Remove the Hero widget and use heroTag property instead
-    return FloatingActionButton(
-      heroTag: 'ai_copilot_fab', // Set custom hero tag here
-      onPressed: () {},
-      backgroundColor: isDark 
-        ? AppColors.darkBg 
-        : Colors.white,
-      elevation: 4,
-      child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: isDark 
-                ? AppColors.neonCyan.withOpacity(0.3)
-                : AppColors.brandDeepGold.withOpacity(0.3),
-              blurRadius: 8,
-              spreadRadius: 1,
-            ),
-          ],
-        ),
-        child: Image.asset(
-          'assets/brand_assets/Eula.png',
-          fit: BoxFit.contain,
-        ),
-      ),
-    );
-  }
-}
-
-// Custom delegate for flexible header with improved sizing and layout
-class _HeaderDelegate extends SliverPersistentHeaderDelegate {
-  final bool isDark;
-  final EdgeInsets viewPadding;
-  final double headerMaxExtent;
-  final double headerMinExtent;
-  final UserModel? user; // Add user parameter
-
-  _HeaderDelegate({
-    required this.isDark,
-    required this.viewPadding,
-    required this.headerMaxExtent,
-    required this.headerMinExtent,
-    this.user, // Make it optional
-  });
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final progress = shrinkOffset / maxExtent;
-    
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark 
-                ? [
-                    AppColors.darkBg.withOpacity(0.9),
-                    AppColors.darkBg.withOpacity(0.85),
-                    AppColors.darkBg.withOpacity(0.8),
-                  ]
-                : [
-                    Colors.white.withOpacity(0.9),
-                    Colors.white.withOpacity(0.95),
-                    AppColors.brandDeepGold.withOpacity(0.05),
                   ],
-            ),
-            // Subtle bottom border
-            border: Border(
-              bottom: BorderSide(
-                color: isDark
-                  ? AppColors.neonCyan.withOpacity(0.1)
-                  : AppColors.brandDeepGold.withOpacity(0.1),
-                width: 1,
-              ),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Stack(
-                children: [
-                  // Content that fades out when scrolling
-                  Opacity(
-                    opacity: 1 - progress,
-                    child: Column(
+                ),
+                actions: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Row(
                       children: [
-                        // Top row with profile and actions - fixed height
-                        SizedBox(
-                          height: 60,
-                          child: _buildTopRow(isDark, context),
+                        IconButton(
+                          icon: Icon(
+                            Icons.search,
+                            color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                            size: 22,
+                          ),
+                          onPressed: () {
+                            context.router.push(const SearchRoute());
+                          },
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                          padding: EdgeInsets.zero,
                         ),
-                        
-                        // Search bar - fixed height
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                          child: _buildSearchBar(isDark, context),
-                        ),
-                        
-                        // Filter chips - fixed height
-                        SizedBox(
-                          height: 40,
-                          child: _buildFilterChips(isDark, context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Collapsed title that appears when scrolling
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: Opacity(
-                      opacity: progress,
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        const SizedBox(width: 8),
+                        Stack(
+                          alignment: Alignment.center,
                           children: [
-                            Container(
-                              height: 30,
-                              width: 30,
-                              margin: const EdgeInsets.only(right: 12),
-                              child: Image.asset(
-                                'assets/brand_assets/Eula.png',
-                                fit: BoxFit.contain,
+                            IconButton(
+                              icon: Icon(
+                                Icons.notifications_none_rounded,
+                                color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                                size: 22,
                               ),
+                              onPressed: () {},
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              padding: EdgeInsets.zero,
                             ),
-                            Text(
-                              'novelnooks',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                foreground: Paint()..shader = LinearGradient(
-                                  colors: isDark 
-                                    ? [AppColors.neonCyan, AppColors.neonPurple]
-                                    : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
-                                ).createShader(const Rect.fromLTWH(0, 0, 100, 0)),
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
-            ),
+              SliverToBoxAdapter(child: _buildFilterChips(context)),
+              SliverToBoxAdapter(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final activeFilter = ref.watch(activeFilterProvider);
+                    final sectionTitle = getSectionTitle(activeFilter);
+                    final heroState = ref.watch(heroStoriesProvider);
+
+                    if (heroState.isLoading) {
+                      return SizedBox(
+                        height: 280,
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                          ),
+                        ),
+                      );
+                    } else if (heroState.hasError) {
+                      return ErrorStateWidget(
+                        errorMessage: heroState.errorMessage ?? 'An error occurred',
+                        onRetry: () =>
+                            ref.read(heroStoriesProvider.notifier).fetchStories(refresh: true),
+                        isDark: isDark,
+                        isHeroSection: true,
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 8),
+                          child: Text(
+                            sectionTitle,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        CarouselSlider(
+                          options: CarouselOptions(
+                            height: 280.0,
+                            autoPlay: true,
+                            enlargeCenterPage: true,
+                            viewportFraction: 0.7,
+                            autoPlayInterval: const Duration(seconds: 5),
+                            autoPlayAnimationDuration: const Duration(milliseconds: 800),
+                          ),
+                          items: heroState.stories.map((story) {
+                            return Builder(
+                              builder: (BuildContext context) {
+                                return FeaturedBookCard(
+                                  story: story,
+                                  isDark: isDark,
+                                  onTap: () {
+                                    ref.read(ebookDetailProvider.notifier).setCurrentEbook(story);
+                                    context.router.push(
+                                      EbookDetailRoute(id: story.id, ebook: story),
+                                    );
+                                  },
+                                );
+                              },
+                            );
+                          }).toList(),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isDark
+                                    ? [
+                                        AppColors.neonCyan.withOpacity(0.8),
+                                        AppColors.neonCyan,
+                                      ]
+                                    : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isDark
+                                      ? AppColors.neonCyan.withOpacity(0.3)
+                                      : AppColors.brandDeepGold.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () {
+                                  final rootRouter = AutoRouter.of(context).root;
+                                  final tabsRouter =
+                                      rootRouter.innerRouterOf<TabsRouter>(TabsRoute.name);
+                                  if (tabsRouter != null) {
+                                    tabsRouter.setActiveIndex(1);
+                                  }
+                                },
+                                splashColor: Colors.white.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(16),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 16.0, horizontal: 24.0),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? Colors.black.withOpacity(0.2)
+                                              : Colors.white.withOpacity(0.2),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          MdiIcons.bookOpenPageVariant,
+                                          color: isDark ? Colors.black : Colors.white,
+                                          size: 24,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Continue Reading',
+                                              style: TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
+                                                color: isDark ? Colors.black : Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              'Pick up where you left off',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: isDark
+                                                    ? Colors.black.withOpacity(0.7)
+                                                    : Colors.white.withOpacity(0.9),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios,
+                                        color: isDark ? Colors.black : Colors.white,
+                                        size: 16,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SectionWidget(
+                  title: 'Recommended For You',
+                  provider: recommendedStoriesProvider,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SectionWidget(
+                  title: 'New Releases',
+                  provider: newReleasesProvider,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SectionWidget(
+                  title: 'Top Rated',
+                  provider: topRatedProvider,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SectionWidget(
+                  title: 'Top Free Reads',
+                  provider: freeStoriesProvider,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SectionWidget(
+                  title: 'Best Selling',
+                  provider: bestSellingProvider,
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: SectionWidget(
+                  title: 'Top Commented Books',
+                  provider: topCommentedProvider,
+                ),
+              ),
+              SliverPadding(padding: EdgeInsets.only(bottom: bottomPadding)),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTopRow(bool isDark, BuildContext context) {
-    return Padding(
-      key: const ValueKey('topRowHeader'),
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Profile section with proper layout
-          Expanded(
-            child: Row(
-              children: [
-                // Profile picture with gradient border
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: isDark 
-                        ? [AppColors.neonCyan, AppColors.neonPurple]
-                        : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-                            .withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: user?.photo != null && user!.photo.isNotEmpty
-                      ? Image.network(
-                          user!.photo,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(isDark),
-                        )
-                      : _buildDefaultAvatar(isDark),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Welcome back',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark 
-                            ? Colors.white70
-                            : AppColors.neutralDarkGray.withOpacity(0.7),
-                        ),
-                      ),
-                      Text(
-                        user != null 
-                          ? '${user!.firstname} ${user!.lastname}'
-                          : 'Guest User',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : AppColors.neutralDarkGray,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Action buttons with proper spacing
-          Row(
+  Widget _buildFilterChips(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        ref.watch(activeFilterProvider);
+        return SizedBox(
+          height: 36,    
+          child: ListView(
+            scrollDirection: Axis.horizontal,
             children: [
-              _buildActionButton(
-                icon: MdiIcons.bell,
-                isDark: isDark,
-                hasNotification: true,
-                onTap: () {},
-              ),
-              const SizedBox(width: 8),
-              _buildActionButton(
-                icon: MdiIcons.cogOutline,
-                isDark: isDark,
-                onTap: () {},
-              ),
+              _buildFilterChip(context, ref, 'For You', 'recommended'),
+              _buildFilterChip(context, ref, 'Trending', 'trending'),
+              _buildFilterChip(context, ref, 'New', 'newReleases'),
+              _buildFilterChip(context, ref, 'Fantasy', 'genre_fantasy'),
+              _buildFilterChip(context, ref, 'Romance', 'genre_romance'),
+              _buildFilterChip(context, ref, 'Mystery', 'genre_mystery'),
+              _buildFilterChip(context, ref, 'Sci-Fi', 'genre_scifi'),
+              _buildFilterChip(context, ref, 'Historical', 'genre_historical'),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildActionButton({
-    required IconData icon,
-    required bool isDark,
-    bool hasNotification = false,
-    required VoidCallback onTap,
-  }) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          height: 40,
-          width: 40,
-          decoration: BoxDecoration(
-            color: isDark 
-              ? Colors.grey[850]!.withOpacity(0.5)
-              : AppColors.neutralLightGray.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                offset: const Offset(0, 1),
-                blurRadius: 3,
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(
-              icon,
-              color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-              size: 20,
-            ),
-            onPressed: onTap,
-            padding: EdgeInsets.zero,
-          ),
-        ),
-        if (hasNotification)
-          Positioned(
-            right: 8,
-            top: 8,
-            child: Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.neonCyan : AppColors.brandWarmOrange,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark ? AppColors.darkBg : Colors.white,
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isDark ? AppColors.neonCyan : AppColors.brandWarmOrange).withOpacity(0.3),
-                    blurRadius: 4,
-                    spreadRadius: 0.5,
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSearchBar(bool isDark, BuildContext context) {
-    return Container(
-      key: const ValueKey('searchBar'),
-      height: 45, // Slightly increased height
-      decoration: BoxDecoration(
-        color: isDark 
-          ? Colors.grey[850]!.withOpacity(0.3)
-          : AppColors.neutralLightGray.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark 
-            ? AppColors.neonCyan.withOpacity(0.15)
-            : AppColors.brandDeepGold.withOpacity(0.15),
-          width: 0.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            offset: const Offset(0, 1),
-            blurRadius: 3,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const SizedBox(width: 16),
-          Icon(
-            MdiIcons.magnify,
-            color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search medical content...',
-                hintStyle: TextStyle(
-                  fontSize: 14,
-                  color: isDark 
-                    ? Colors.white60
-                    : AppColors.neutralDarkGray.withOpacity(0.5),
-                ),
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white : AppColors.neutralDarkGray,
-              ),
-            ),
-          ),
-          Container(
-            height: 45,
-            width: 45,
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(
-                  color: isDark 
-                    ? AppColors.neonCyan.withOpacity(0.15)
-                    : AppColors.brandDeepGold.withOpacity(0.15),
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: Center(
-              child: Icon(
-                MdiIcons.tuneVertical,
-                color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                size: 20,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChips(bool isDark, BuildContext context) {
-    final filters = ['All', 'Books', 'Videos', 'Audio', 'Questions'];
-    
-    return ListView.builder(
-      key: const ValueKey('filterChips'),
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: filters.length,
-      itemBuilder: (context, index) {
-        final filter = filters[index];
-        final isSelected = filter == 'All';
-        
-        return Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: isSelected
-                ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-                : (isDark ? Colors.grey[850]!.withOpacity(0.3) : AppColors.neutralLightGray.withOpacity(0.5)),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isSelected 
-                  ? Colors.transparent
-                  : (isDark ? AppColors.neonCyan.withOpacity(0.15) : AppColors.brandDeepGold.withOpacity(0.15)),
-                width: 0.5,
-              ),
-              boxShadow: isSelected ? [
-                BoxShadow(
-                  color: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold).withOpacity(0.3),
-                  blurRadius: 5,
-                  spreadRadius: 0.5,
-                ),
-              ] : null,
-            ),
-            child: Center(
-              child: Text(
-                filter,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  color: isSelected
-                      ? (isDark ? AppColors.darkBg : Colors.white)
-                      : (isDark ? Colors.white : AppColors.neutralDarkGray),
-                ),
-              ),
-            ),
           ),
         );
       },
     );
   }
 
-  Widget _buildDefaultAvatar(bool isDark) {
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: isDark ? AppColors.darkBg : Colors.white,
-      child: Text(
-        user?.firstname.isNotEmpty == true 
-            ? user!.firstname[0].toUpperCase() 
-            : 'G',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+  Widget _buildFilterChip(
+    BuildContext context,
+    WidgetRef ref,
+    String label,
+    String sectionValue,
+  ) {
+    final activeFilter = ref.watch(activeFilterProvider);
+    final isSelected = activeFilter == label;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () {
+        ref.read(activeFilterProvider.notifier).state = label;
+        ref.read(heroStoriesProvider.notifier).updateSection(sectionValue);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(right: 8.0, top: 4.0, bottom: 4.0), // Reduced vertical margin
+        decoration: BoxDecoration(
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: isDark
+                      ? [AppColors.neonCyan, AppColors.neonCyan.withOpacity(0.7)]
+                      : [AppColors.brandDeepGold, AppColors.brandWarmOrange],
+                )
+              : null,
+          color: isSelected ? null : (isDark ? Colors.grey[800] : Colors.grey[200]),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                        .withOpacity(0.3),
+                    blurRadius: 4,
+                    spreadRadius: 0,
+                  ),
+                ]
+              : null,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // Reduced vertical padding
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected
+                  ? (isDark ? Colors.black : Colors.white)
+                  : (isDark ? Colors.white70 : Colors.black87),
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ErrorStateWidget extends StatelessWidget {
+  final String errorMessage;
+  final VoidCallback onRetry;
+  final bool isDark;
+  final bool isHeroSection;
+
+  const ErrorStateWidget({
+    Key? key,
+    required this.errorMessage,
+    required this.onRetry,
+    required this.isDark,
+    this.isHeroSection = false,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: isHeroSection ? 280 : 220,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkBg.withOpacity(0.6) : Colors.white.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? AppColors.neonCyan.withOpacity(0.2)
+              : AppColors.brandDeepGold.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.red.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.wifi_off_rounded,
+              color: Colors.red,
+              size: 36,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Oops! Something went wrong',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            errorMessage.length > 100 ? '${errorMessage.substring(0, 100)}...' : errorMessage,
+            style: TextStyle(
+              fontSize: 14,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: onRetry,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+              foregroundColor: isDark ? Colors.black : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 4,
+              shadowColor:
+                  isDark ? AppColors.neonCyan.withOpacity(0.5) : AppColors.brandDeepGold.withOpacity(0.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.refresh_rounded, size: 18),
+                const SizedBox(width: 8),
+                const Text('Try Again', style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SectionWidget extends ConsumerWidget {
+  final String title;
+  final StateNotifierProvider<StoriesNotifier, StoriesState> provider;
+
+  const SectionWidget({super.key, required this.title, required this.provider});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final state = ref.watch(provider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ),
+        SizedBox(
+          height: 280,
+          child: state.isLoading
+              ? _buildSkeletonList(isDark)
+              : state.hasError
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: ErrorStateWidget(
+                        errorMessage: state.errorMessage ?? 'Failed to load books',
+                        onRetry: () => ref.read(provider.notifier).fetchStories(refresh: true),
+                        isDark: isDark,
+                      ),
+                    )
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: state.stories.length,
+                      itemBuilder: (context, index) {
+                        final story = state.stories[index];
+                        return Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: BookItem(story: story),
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkeletonList(bool isDark) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: 6,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: SkeletonBookItem(isDark: isDark),
+        );
+      },
+    );
+  }
+}
+
+class BookItem extends StatelessWidget {
+  final EbookModel story;
+
+  const BookItem({super.key, required this.story});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final displayTitle = story.title.length < 20 ? story.title : '${story.title.substring(0, 15)}...';
+
+    return GestureDetector(
+      onTap: () {
+        context.router.push(EbookDetailRoute(id: story.id, ebook: story));
+      },
+      child: SizedBox(
+        width: 120,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 2 / 3,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: story.image != null && story.image!.isNotEmpty
+                    ? Image.network(
+                        story.image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: isDark ? Colors.grey[850] : Colors.grey[200],
+                          child: Icon(
+                            MdiIcons.bookOpenPageVariant,
+                            size: 30,
+                            color: isDark ? Colors.white24 : Colors.black12,
+                          ),
+                        ),
+                      )
+                    : Container(
+                        color: isDark ? Colors.grey[850] : Colors.grey[200],
+                        child: Icon(
+                          MdiIcons.bookOpenPageVariant,
+                          size: 30,
+                          color: isDark ? Colors.white24 : Colors.black12,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              displayTitle,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            Text(
+              'By ${story.author}',
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (story.averageRating > 0)
+              Row(
+                children: [
+                  const Icon(Icons.star, color: Colors.amber, size: 16),
+                  const SizedBox(width: 4),
+                  Text(
+                    story.averageRating.toStringAsFixed(1),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            Text(
+              story.free ? 'Free' : 'Paid',
+              style: TextStyle(
+                color: story.free ? Colors.green : Colors.red,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SkeletonBookItem extends StatelessWidget {
+  final bool isDark;
+
+  const SkeletonBookItem({Key? key, required this.isDark}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 120,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AspectRatio(
+            aspectRatio: 2 / 3,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: isDark ? Colors.grey[800] : Colors.grey[300],
+              ),
+              child: Center(
+                child: Icon(
+                  MdiIcons.bookOpenPageVariant,
+                  size: 24,
+                  color: isDark ? Colors.grey[700] : Colors.grey[400],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            height: 14,
+            width: 100,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 12,
+            width: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            height: 12,
+            width: 60,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: isDark ? Colors.grey[800] : Colors.grey[300],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FeaturedBookCard extends ConsumerWidget {
+  final EbookModel story;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const FeaturedBookCard({
+    Key? key,
+    required this.story,
+    required this.isDark,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth * 0.65;
+    final displayTitle = story.title.length < 20 ? story.title : '${story.title.substring(0, 20)}...';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: cardWidth,
+        height: 280,
+        margin: const EdgeInsets.symmetric(horizontal: 5.0),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey[850]!.withOpacity(0.6) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 1,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: story.image != null && story.image!.isNotEmpty
+                    ? Image.network(
+                        story.image!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
+                      )
+                    : _buildPlaceholder(),
+              ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.3),
+                      Colors.black.withOpacity(0.7),
+                    ],
+                    stops: const [0.4, 0.75, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayTitle,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'By ${story.author}',
+                              style: const TextStyle(fontSize: 12, color: Colors.white70),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.star, color: Colors.amber, size: 16),
+                                const SizedBox(width: 4),
+                                Text(
+                                  story.averageRating.toStringAsFixed(1),
+                                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                                ),
+                                const SizedBox(width: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: story.free ? Colors.green : Colors.red.withOpacity(0.8),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    story.free ? 'Free' : 'Paid',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Positioned(top: 12, right: 12, child: _buildLikeButton(ref)),
+            Positioned(top: 12, right: 60, child: _buildBookmarkButton(ref)),
+          ],
         ),
       ),
     );
   }
 
-  @override
-  double get maxExtent => headerMaxExtent;
+  Widget _buildLikeButton(WidgetRef ref) {
+    final isLiked = story.isLikedByCurrentUser ?? false;
+
+    return InkWell(
+      onTap: () {
+        final currentIsLiked = story.isLikedByCurrentUser ?? false;
+        final updatedStory = story.copyWith(
+          isLikedByCurrentUser: !currentIsLiked,
+          likeCount: currentIsLiked ? story.likeCount - 1 : story.likeCount + 1,
+        );
+        ref.read(heroStoriesProvider.notifier).updateStory(updatedStory);
+        Future(() async {
+          try {
+            ref.read(ebookDetailProvider.notifier).setCurrentEbook(updatedStory);
+            unawaited(ref.read(ebookDetailProvider.notifier).toggleLike());
+            _updateStoryInOtherProviders(ref, updatedStory);
+          } catch (e) {
+            print('Error updating like status: $e');
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(50),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isLiked ? Colors.red.withOpacity(0.2) : Colors.black.withOpacity(0.3),
+          shape: BoxShape.circle,
+          border: Border.all(color: isLiked ? Colors.red : Colors.white30, width: 1.5),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+          child: Icon(
+            isLiked ? Icons.favorite : Icons.favorite_border,
+            key: ValueKey<bool>(isLiked),
+            color: isLiked ? Colors.red : Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBookmarkButton(WidgetRef ref) {
+    final isInReadingList = story.isInReadingList ?? false;
+
+    return InkWell(
+      onTap: () {
+        final currentIsInReadingList = story.isInReadingList ?? false;
+        final updatedStory = story.copyWith(isInReadingList: !currentIsInReadingList);
+        ref.read(heroStoriesProvider.notifier).updateStory(updatedStory);
+        Future(() async {
+          try {
+            ref.read(ebookDetailProvider.notifier).setCurrentEbook(updatedStory);
+            unawaited(ref.read(ebookDetailProvider.notifier).toggleReadingList());
+            _updateStoryInOtherProviders(ref, updatedStory);
+          } catch (e) {
+            print('Error updating reading list status: $e');
+          }
+        });
+      },
+      borderRadius: BorderRadius.circular(50),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isInReadingList
+              ? (isDark ? AppColors.neonCyan.withOpacity(0.2) : AppColors.brandDeepGold.withOpacity(0.2))
+              : Colors.black.withOpacity(0.3),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isInReadingList
+                ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                : Colors.white30,
+            width: 1.5,
+          ),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+          child: Icon(
+            isInReadingList ? MdiIcons.bookmark : MdiIcons.bookmarkOutline,
+            key: ValueKey<bool>(isInReadingList),
+            color: isInReadingList
+                ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                : Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      color: isDark ? Colors.grey[850] : Colors.grey[200],
+      child: Center(
+        child: Icon(
+          MdiIcons.bookOpenPageVariant,
+          size: 48,
+          color: isDark ? Colors.white24 : Colors.black12,
+        ),
+      ),
+    );
+  }
+
+  void _updateStoryInOtherProviders(WidgetRef ref, EbookModel updatedStory) {
+    final providers = [
+      recommendedStoriesProvider,
+      newReleasesProvider,
+      topRatedProvider,
+      freeStoriesProvider,
+      bestSellingProvider,
+      topCommentedProvider,
+    ];
+    for (final provider in providers) {
+      try {
+        final state = ref.read(provider);
+        final index = state.stories.indexWhere((s) => s.id == updatedStory.id);
+        if (index >= 0) {
+          ref.read(provider.notifier).updateStory(updatedStory);
+        }
+      } catch (e) {}
+    }
+  }
+}
+
+class FeatureSkeletonItem extends StatelessWidget {
+  final bool isDark;
+
+  const FeatureSkeletonItem({Key? key, required this.isDark}) : super(key: key);
 
   @override
-  double get minExtent => headerMinExtent;
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = screenWidth * 0.65;
 
-  @override
-  bool shouldRebuild(covariant _HeaderDelegate oldDelegate) {
-    return oldDelegate.isDark != isDark || 
-           oldDelegate.headerMaxExtent != headerMaxExtent || 
-           oldDelegate.headerMinExtent != headerMinExtent ||
-           oldDelegate.user?.id != user?.id; // Add user ID comparison
+    return Container(
+      width: cardWidth,
+      height: 280,
+      margin: const EdgeInsets.symmetric(horizontal: 5.0),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.grey[800]!.withOpacity(0.6) : Colors.grey[300],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    MdiIcons.bookOpenPageVariant,
+                    size: 48,
+                    color: isDark ? Colors.grey[700] : Colors.grey[400],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 18,
+                  width: 160,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: isDark ? Colors.grey[700] : Colors.grey[400],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 12,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color: isDark ? Colors.grey[700] : Colors.grey[400],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

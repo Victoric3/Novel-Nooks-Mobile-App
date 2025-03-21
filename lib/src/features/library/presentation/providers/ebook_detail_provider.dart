@@ -95,9 +95,9 @@ class EbookDetailNotifier extends StateNotifier<EbookDetailState> {
     if (!_isDisposed) {
       state = state.copyWith(ebook: updatedEbook);
     }
-    
     // Debounce API call (300ms)
-    _likeDebounceTimer = Timer(const Duration(milliseconds: 300), () async {
+    _likeDebounceTimer = Timer(const Duration(milliseconds: 50), () async {
+
       // Safety check - don't proceed if disposed
       if (_isDisposed) return;
       
@@ -235,6 +235,7 @@ class EbookDetailNotifier extends StateNotifier<EbookDetailState> {
   }
   
   Future<void> toggleReadingList() async {
+    print("hit reading list");
     if (state.ebook == null || _isDisposed) return;
     
     // Get current reading list status
@@ -291,6 +292,11 @@ class EbookDetailNotifier extends StateNotifier<EbookDetailState> {
     _likeDebounceTimer?.cancel();
     _rateDebounceTimer?.cancel();
     state = const EbookDetailState();
+  }
+
+  // Add this method to EbookDetailNotifier class:
+  void setCurrentEbook (EbookModel ebook) {
+      state = state.copyWith(ebook: ebook);
   }
 }
 

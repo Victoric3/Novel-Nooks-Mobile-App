@@ -4,8 +4,8 @@ import 'package:novelnooks/src/common/common.dart';
 import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:novelnooks/src/features/auth/data/models/user_model.dart';
 import 'package:novelnooks/src/features/auth/providers/user_provider.dart';
+import 'package:novelnooks/src/features/features.dart';
 import 'package:novelnooks/src/features/library/presentation/providers/library_provider.dart';
-import 'package:novelnooks/src/features/library/presentation/ui/widgets/ebook_card.dart';
 import 'package:novelnooks/src/features/library/presentation/ui/widgets/ebook_skeleton_card.dart';
 import 'package:novelnooks/src/features/library/presentation/ui/widgets/empty_library.dart';
 import 'package:flutter/material.dart';
@@ -126,28 +126,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ),
         ),
       ),
-      floatingActionButton: Padding(
-        // Increase padding from 90 to 120 pixels to raise the button higher
-        padding: const EdgeInsets.only(bottom: 120.0),
-        child: FloatingActionButton(
-          onPressed: () {
-            // Get the root router
-            final rootRouter = AutoRouter.of(context).root;
-            
-            // Find the tabs router and set its active index to 2 (Create tab)
-            final tabsRouter = rootRouter.innerRouterOf<TabsRouter>(TabsRoute.name);
-            if (tabsRouter != null) {
-              tabsRouter.setActiveIndex(2); // Create tab is at index 2
-            } else {
-              // Fallback to direct navigation if we're not in the tabs router
-              // context.router.navigate(const CreateRoute());
-            }
-          },
-          backgroundColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-          child: const Icon(Icons.add, color: Colors.white),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // Adjust location
     );
   }
 
@@ -370,8 +348,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               ref.read(libraryProvider.notifier).setSearchQuery(value);
             } else if (value.isEmpty) {
               // Explicitly refresh with null query when cleared
-              ref.read(libraryProvider.notifier).setSearchQuery("");
-              ref.read(libraryProvider.notifier).refreshEbooks();
+              ref.read(libraryProvider.notifier).setSearchQuery(null);
             }
           },
         ),
@@ -379,89 +356,74 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     );
   }
 
-  // Update the _buildFilterChips method with icons for all filters
   Widget _buildFilterChips(bool isDark) {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkBg.withOpacity(0.95) : Colors.white.withOpacity(0.95),
-        border: Border(
-          bottom: BorderSide(
-            color: isDark
-                ? AppColors.neonCyan.withOpacity(0.05)
-                : AppColors.brandDeepGold.withOpacity(0.05),
-            width: 1,
-          ),
-        ),
-      ),
+    return SizedBox(
+      height: 42,
       child: ListView(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         children: [
-          // Add icons to all filter chips for consistency
-          _buildFilterChip(isDark, 'All', 'all', icon: MdiIcons.bookshelf),
-          _buildFilterChip(isDark, 'Favorites', 'favorites', icon: MdiIcons.heartOutline),
           _buildFilterChip(isDark, 'Reading List', 'readlist', icon: MdiIcons.bookmarkOutline),
-          _buildFilterChip(isDark, 'Complete', 'complete', icon: MdiIcons.checkCircleOutline),
-          _buildFilterChip(isDark, 'Processing', 'processing', icon: MdiIcons.progressClock),
-          _buildFilterChip(isDark, 'With Audio', 'audio', icon: MdiIcons.headphones),
-          _buildFilterChip(isDark, 'With Quizzes', 'quiz', icon: MdiIcons.checkboxMarkedCircleOutline),
-          _buildFilterChip(isDark, 'Recent', 'recent', icon: MdiIcons.history),
+          _buildFilterChip(isDark, 'Favorites', 'favorites', icon: MdiIcons.heartOutline),
         ],
       ),
     );
   }
 
-  // Update the _buildFilterChip method to optionally include an icon
-  Widget _buildFilterChip(bool isDark, String label, String? filterValue, {IconData? icon}) {
-  final currentFilter = ref.watch(libraryProvider).filterBy;
-  
-  // "All" chip should be selected when no filter is active
-  final isSelected = currentFilter == filterValue;
-  
-  return Padding(
-    padding: const EdgeInsets.only(right: 8),
-    child: FilterChip(
-      label: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-                : (isDark ? Colors.white70 : Colors.black87),
-            ),
-            const SizedBox(width: 4),
+  // Update the filter chip to prevent deselection
+  Widget _buildFilterChip(bool isDark, String label, String filterValue, {IconData? icon}) {
+    final currentFilter = ref.watch(libraryProvider).filterBy;
+    
+    // Check if this chip is selected
+    final isSelected = currentFilter == filterValue;
+    
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        selected: isSelected,
+        showCheckmark: false,
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                  ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+                  : (isDark ? Colors.white70 : Colors.black87),
+              ),
+              const SizedBox(width: 4),
+            ],
+            Text(label),
           ],
-          Text(label),
-        ],
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        ref.read(libraryProvider.notifier).setFilter(selected ? filterValue : 'all');
-      },
-      backgroundColor: isDark ? Colors.black12 : Colors.white,
-      selectedColor: isDark ? AppColors.neonCyan.withOpacity(0.2) : AppColors.brandDeepGold.withOpacity(0.2),
-      labelStyle: TextStyle(
-        color: isSelected
-          ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-          : (isDark ? Colors.white70 : Colors.black87),
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      ),
-      checkmarkColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        ),
+        backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
+        selectedColor: isDark 
+            ? AppColors.neonCyan.withOpacity(0.2)
+            : AppColors.brandDeepGold.withOpacity(0.2),
         side: BorderSide(
           color: isSelected
-            ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-            : Colors.transparent,
+              ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+              : Colors.transparent,
+          width: 1.5,
         ),
+        labelStyle: TextStyle(
+          color: isSelected
+              ? (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
+              : (isDark ? Colors.white70 : Colors.black87),
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+        onSelected: (_) {
+          // Only change if selecting a different filter
+          if (!isSelected) {
+            ref.read(libraryProvider.notifier).setFilter(filterValue);
+          }
+          // Do nothing if trying to deselect the current filter
+        },
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildMainContent(bool isDark, LibraryState libraryState) {
     if (libraryState.errorMessage != null) {
@@ -480,19 +442,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       
       // Otherwise show the general empty library view
       return EmptyLibrary(
-        onCreatePressed: () {
-          // Navigate to create tab
+        onExplorePressed: () {
+          // Navigate to home tab for book exploration
           final rootRouter = AutoRouter.of(context).root;
           final tabsRouter = rootRouter.innerRouterOf<TabsRouter>(TabsRoute.name);
           if (tabsRouter != null) {
-            tabsRouter.setActiveIndex(2); // Create tab is at index 2
+            tabsRouter.setActiveIndex(0); // Home tab is at index 0
           } else {
-            // context.router.navigate(const CreateRoute());
+            // Fallback direct navigation if needed
+            // context.router.navigate(const HomeRoute());
           }
         },
       );
     }
     
+    // Replace the GridView.builder in _buildMainContent method with this:
     return RefreshIndicator(
       onRefresh: () => ref.read(libraryProvider.notifier).refreshEbooks(),
       color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
@@ -501,7 +465,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.7,
+          childAspectRatio: 0.5,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
         ),
@@ -513,8 +477,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             return const EbookSkeletonCard();
           }
           
-          return EbookCard(
-            ebook: libraryState.ebooks[index],
+          return BookItem(
+            story: libraryState.ebooks[index],
           );
         },
       ),

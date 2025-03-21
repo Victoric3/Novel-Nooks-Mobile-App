@@ -1,60 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:auto_route/auto_route.dart';
 import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 
 class EmptyLibrary extends StatelessWidget {
-  final VoidCallback? onCreatePressed;
-  
-  const EmptyLibrary({
-    Key? key,
-    this.onCreatePressed,
-  }) : super(key: key);
+  final VoidCallback onExplorePressed;
+
+  const EmptyLibrary({Key? key, required this.onExplorePressed}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final size = MediaQuery.of(context).size;
     
     return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Center(
+      physics: const BouncingScrollPhysics(),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Eula logo with glow effect
+              const SizedBox(height: 40),
+              
+              // Book illustration
               Container(
-                width: size.width * 0.3,
-                height: size.width * 0.3,
+                width: 180,
+                height: 180,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDark 
-                    ? AppColors.darkBg.withOpacity(0.5)
-                    : Colors.white.withOpacity(0.9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold)
-                        .withOpacity(0.2),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
+                    ? AppColors.neonCyan.withOpacity(0.1)
+                    : AppColors.brandDeepGold.withOpacity(0.1),
                 ),
-                child: ClipOval(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Image.asset(
-                      'assets/brand_assets/Eula.png',
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+                child: Icon(
+                  MdiIcons.bookshelf,
+                  size: 80,
+                  color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
                 ),
               ),
               
               const SizedBox(height: 32),
               
+              // Title
               Text(
                 'Your Library is Empty',
                 style: TextStyle(
@@ -62,77 +49,93 @@ class EmptyLibrary extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.white : Colors.black87,
                 ),
+                textAlign: TextAlign.center,
               ),
               
               const SizedBox(height: 16),
               
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 48),
-                child: Text(
-                  'Create your first interactive eBook by uploading a document',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark ? Colors.white70 : Colors.black54,
-                  ),
+              // Description
+              Text(
+                'Discover amazing books and add them to your Reading List or mark them as favorites to see them here.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              
+              const SizedBox(height: 32),
+              
+              // How to add books section
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark 
+                    ? Colors.black.withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'How to build your library:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    _buildStep(
+                      context, 
+                      1, 
+                      'Explore books in the home screen',
+                      MdiIcons.compass,
+                      isDark
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildStep(
+                      context, 
+                      2, 
+                      'Tap the bookmark icon to add to Reading List',
+                      MdiIcons.bookmarkOutline,
+                      isDark
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    _buildStep(
+                      context, 
+                      3, 
+                      'Tap the heart icon to mark as favorite',
+                      MdiIcons.heartOutline,
+                      isDark
+                    ),
+                  ],
                 ),
               ),
               
               const SizedBox(height: 32),
               
-              ElevatedButton.icon(
-                onPressed: onCreatePressed ?? () {
-                  context.router.pushNamed('/create');
-                },
-                icon: Icon(
-                  MdiIcons.bookPlus,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                label: Text(
-                  'Create New eBook',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+              // Action button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onExplorePressed,
+                  icon: Icon(
+                    MdiIcons.compass,
+                    color: isDark ? Colors.black : Colors.white,
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                  label: const Text('Explore Books'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+                    foregroundColor: isDark ? Colors.black : Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  elevation: 4,
-                  shadowColor: (isDark ? AppColors.neonCyan : AppColors.brandDeepGold).withOpacity(0.5),
-                ),
-              ),
-              
-              const SizedBox(height: 48),
-              
-              // Features list
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Column(
-                  children: [
-                    _buildFeatureItem(
-                      isDark,
-                      MdiIcons.bookOpenPageVariant,
-                      'Create interactive eBooks from your documents'
-                    ),
-                    const SizedBox(height: 12),
-                    _buildFeatureItem(
-                      isDark,
-                      MdiIcons.headphones,
-                      'Get AI-generated audio for your content'
-                    ),
-                    const SizedBox(height: 12),
-                    _buildFeatureItem(
-                      isDark,
-                      MdiIcons.checkboxMarkedCircleOutline,
-                      'Practice with auto-generated quizzes'
-                    ),
-                  ],
                 ),
               ),
             ],
@@ -141,22 +144,26 @@ class EmptyLibrary extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildFeatureItem(bool isDark, IconData icon, String text) {
+
+  Widget _buildStep(BuildContext context, int number, String text, IconData icon, bool isDark) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          width: 24,
+          height: 24,
           decoration: BoxDecoration(
-            color: isDark 
-              ? AppColors.neonCyan.withOpacity(0.1)
-              : AppColors.brandDeepGold.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            icon,
-            size: 18,
+            shape: BoxShape.circle,
             color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+          ),
+          child: Center(
+            child: Text(
+              number.toString(),
+              style: TextStyle(
+                color: isDark ? Colors.black : Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -168,6 +175,11 @@ class EmptyLibrary extends StatelessWidget {
               color: isDark ? Colors.white70 : Colors.black87,
             ),
           ),
+        ),
+        Icon(
+          icon,
+          size: 20,
+          color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
         ),
       ],
     );

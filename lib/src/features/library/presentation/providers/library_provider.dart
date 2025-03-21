@@ -25,8 +25,20 @@ class LibraryState extends Equatable {
     this.errorMessage,
     this.isRefreshing = false,
     this.searchQuery,
-    this.filterBy = 'all'
+    this.filterBy = 'readlist' // Change from 'all' to 'readlist'
   });
+
+  factory LibraryState.initial() {
+    return const LibraryState(
+      ebooks: [],
+      pagination: null,
+      isLoading: false,
+      errorMessage: null,
+      isRefreshing: false,
+      searchQuery: null,
+      filterBy: 'readlist',
+    );
+  }
 
   LibraryState copyWith({
     List<EbookModel>? ebooks,
@@ -78,26 +90,21 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     try {
       Map<String, dynamic> result;
       
-      // Choose the appropriate fetch method based on filter
+      // Only choose between readlist and favorites
       switch (state.filterBy) {
         case 'favorites':
           result = await _repository.fetchUserFavorites(
             page: refresh ? 1 : state.pagination?.currentPage ?? 1,
             limit: 10,
+            searchQuery: state.searchQuery, // Pass search query
           );
           break;
         case 'readlist':
+        default: // Default to readlist for any other values
           result = await _repository.fetchUserReadList(
             page: refresh ? 1 : state.pagination?.currentPage ?? 1,
             limit: 10,
-          );
-          break;
-        default:
-          result = await _repository.fetchUserEbooks(
-            page: refresh ? 1 : state.pagination?.currentPage ?? 1,
-            limit: 10,
-            searchQuery: state.searchQuery,
-            filterBy: state.filterBy,
+            searchQuery: state.searchQuery, // Pass search query
           );
           break;
       }
@@ -140,12 +147,14 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
           result = await _repository.fetchUserFavorites(
             page: 1,
             limit: 10,
+            searchQuery: state.searchQuery, // Pass search query
           );
           break;
         case 'readlist':
           result = await _repository.fetchUserReadList(
             page: 1,
             limit: 10,
+            searchQuery: state.searchQuery, // Pass search query
           );
           break;
         default:
@@ -191,12 +200,14 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
           result = await _repository.fetchUserFavorites(
             page: nextPage,
             limit: 10,
+            searchQuery: state.searchQuery, // Pass search query
           );
           break;
         case 'readlist':
           result = await _repository.fetchUserReadList(
             page: nextPage,
             limit: 10,
+            searchQuery: state.searchQuery, // Pass search query
           );
           break;
         default:
@@ -240,28 +251,27 @@ class LibraryNotifier extends StateNotifier<LibraryState> {
     fetchEbooks(refresh: true);
   }
 
-  void setFilter(String? filterValue) {
-    // Don't do anything if filter hasn't changed
-    if (filterValue == state.filterBy) return;
-
-    // Update state with new filter and start loading
+  void setFilter(String filter) {
+    // Only allow 'readlist' or 'favorites' as filter values
+    if (filter != 'readlist' && filter != 'favorites') {
+      filter = 'readlist'; // Default to readlist for any other values
+    }
+    
     state = state.copyWith(
+      filterBy: filter,
       isLoading: true,
-      filterBy: filterValue ?? 'all',
       errorMessage: null,
-      // Don't clear existing eBooks immediately for smoother UX
-      // The refresh will replace them soon
     );
-
-    // Schedule the refresh asynchronously to allow UI to update first
-    Future.microtask(() => refreshEbooks());
+    
+    // Refresh with new filter
+    fetchEbooks(refresh: true);
   }
 
   // Method to directly add a newly created eBook
   void addNewEbook(EbookModel ebook) {
     // Check if the ebook already exists in our list (avoid duplicates)
     final exists = state.ebooks.any((e) => e.id == ebook.id);
-    print(ebook.coverImage);
+
     if (!exists) {
       // Add the new ebook at the beginning of the list since it's newest
       final updatedEbooks = [ebook, ...state.ebooks];

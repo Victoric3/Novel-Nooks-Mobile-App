@@ -4,225 +4,206 @@ class EbookModel extends Equatable {
   final String id;
   final String title;
   final String? slug;
-  final String? description;
-  final String? coverImage;
+  final String? summary;
+  final String? image;
   final String author;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<String> tags;
-  final String status;
-  final String? fileUrl; // Add this field
-  
-  // Derived fields from Story model
-  final int? pageCount;
-  final bool hasAudio;
-  final bool hasQuizzes;
-  final double? completionPercentage;
-  
-  // Like and rating fields
-  final List<String>? likes; 
+  final List<int>? readTime;
+  final List<String>? likes;
   final int likeCount;
-  final bool? isLikedByCurrentUser;
+  final int commentCount;
   final double averageRating;
   final int ratingCount;
-  final int? userRating; // Rating given by current user (if any)
-  
-  // Other fields
-  final List<int>? readTime;
-  final List<Map<String, dynamic>>? contentTitles;
-  final List<Map<String, dynamic>>? sections; // Add this field
-  final String? processingError;
-  final bool? isInReadingList; // Add this field
+  final bool free;
+  final num prizePerChapter;
+  final bool completed;
+  final List<String>? contentTitles;
+  final int contentCount;
+  final double pricePerChapter;
+
+  // Derived fields (client-side or optional)
+  final bool? isLikedByCurrentUser;
+  final int? userRating;
+  final bool? isInReadingList;
 
   const EbookModel({
     required this.id,
     required this.title,
-    this.slug, // Add to constructor
-    this.description,
-    this.coverImage,
+    this.slug,
+    this.summary,
+    this.image,
     required this.author,
     required this.createdAt,
     this.updatedAt,
     this.tags = const [],
-    required this.status,
-    this.fileUrl, // Add to constructor
-    this.pageCount,
-    this.hasAudio = false,
-    this.hasQuizzes = false,
-    this.completionPercentage,
+    this.readTime,
     this.likes,
     this.likeCount = 0,
-    this.isLikedByCurrentUser = false,
+    this.commentCount = 0,
     this.averageRating = 0.0,
     this.ratingCount = 0,
-    this.userRating,
-    this.readTime,
+    this.free = false,
+    this.prizePerChapter = 5,
+    this.completed = true,
     this.contentTitles,
-    this.sections, // Add this to constructor parameters
-    this.processingError,
-    this.isInReadingList = false, // Add to constructor
+    this.isLikedByCurrentUser,
+    this.userRating,
+    this.isInReadingList,
+    this.contentCount = 0,
+    this.pricePerChapter = 0.0,
   });
-  
-  // Add a copyWith method to help with updates
+
+  // copyWith method for easy updates
   EbookModel copyWith({
     String? id,
     String? title,
-    String? slug, // Add to copyWith
-    String? description,
-    String? coverImage,
+    String? slug,
+    String? summary,
+    String? image,
     String? author,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<String>? tags,
-    String? status,
-    String? fileUrl, // Add to copyWith params
-    int? pageCount,
-    bool? hasAudio,
-    bool? hasQuizzes,
-    double? completionPercentage,
+    List<int>? readTime,
     List<String>? likes,
     int? likeCount,
-    bool? isLikedByCurrentUser,
+    int? commentCount,
     double? averageRating,
     int? ratingCount,
+    bool? free,
+    num? prizePerChapter,
+    bool? completed,
+    List<String>? contentTitles,
+    bool? isLikedByCurrentUser,
     int? userRating,
-    List<int>? readTime,
-    List<Map<String, dynamic>>? contentTitles,
-    List<Map<String, dynamic>>? sections, // Add this parameter
-    String? processingError,
-    bool? isInReadingList, // Add to copyWith
+    bool? isInReadingList,
+    int? contentCount,
+    double? pricePerChapter,
   }) {
     return EbookModel(
       id: id ?? this.id,
       title: title ?? this.title,
-      slug: slug ?? this.slug, // Include in return
-      description: description ?? this.description,
-      coverImage: coverImage ?? this.coverImage,
+      slug: slug ?? this.slug,
+      summary: summary ?? this.summary,
+      image: image ?? this.image,
       author: author ?? this.author,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       tags: tags ?? this.tags,
-      status: status ?? this.status,
-      fileUrl: fileUrl ?? this.fileUrl, // Add to return object
-      pageCount: pageCount ?? this.pageCount,
-      hasAudio: hasAudio ?? this.hasAudio,
-      hasQuizzes: hasQuizzes ?? this.hasQuizzes,
-      completionPercentage: completionPercentage ?? this.completionPercentage,
+      readTime: readTime ?? this.readTime,
       likes: likes ?? this.likes,
       likeCount: likeCount ?? this.likeCount,
-      isLikedByCurrentUser: isLikedByCurrentUser ?? this.isLikedByCurrentUser,
+      commentCount: commentCount ?? this.commentCount,
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,
-      userRating: userRating ?? this.userRating,
-      readTime: readTime ?? this.readTime,
+      free: free ?? this.free,
+      prizePerChapter: prizePerChapter ?? this.prizePerChapter,
+      completed: completed ?? this.completed,
       contentTitles: contentTitles ?? this.contentTitles,
-      sections: sections ?? this.sections,
-      processingError: processingError ?? this.processingError,
-      isInReadingList: isInReadingList ?? this.isInReadingList, // Include in return
+      isLikedByCurrentUser: isLikedByCurrentUser ?? this.isLikedByCurrentUser,
+      userRating: userRating ?? this.userRating,
+      isInReadingList: isInReadingList ?? this.isInReadingList,
+      contentCount: contentCount ?? this.contentCount,
+      pricePerChapter: pricePerChapter ?? this.pricePerChapter,
     );
   }
 
-  // Update the fromJson method
+  // fromJson factory method to parse server data
   factory EbookModel.fromJson(Map<String, dynamic> json, {String? currentUserId}) {
-    // Parse likes and check if user has liked
+    // Parse likes
     List<String> likesList = [];
-    bool isLiked = false;
-    
     if (json['likes'] != null) {
-      likesList = (json['likes'] as List).map((item) {
-        final String likeId = item is Map ? item['_id'] ?? '' : item.toString();
-        return likeId;
-      }).toList();
-      
-      // Check if current user has liked this ebook
-      if (currentUserId != null) {
-        isLiked = likesList.contains(currentUserId);
-      }
+      likesList = (json['likes'] as List).map((item) => item.toString()).toList();
     }
     
-    // Find user's rating if available
+    // Check both server-provided likeStatus field and likes array
+    bool isLiked = json['likeStatus'] ?? 
+      (currentUserId != null && likesList.contains(currentUserId));
+
+    // Parse ratings for userRating
     int? userRating;
     if (json['ratings'] != null && currentUserId != null) {
       final userRatingObj = (json['ratings'] as List).firstWhere(
-        (rating) {
-          final userId = rating is Map 
-            ? rating['user'] is Map 
-              ? rating['user']['_id'] ?? '' 
-              : rating['user'].toString()
-            : '';
-          return userId == currentUserId;
-        }, 
-        orElse: () => null
+        (rating) => rating['user'].toString() == currentUserId,
+        orElse: () => null,
       );
-      
       if (userRatingObj != null) {
         userRating = userRatingObj['rating'];
       }
     }
-    
-    // Parse readTime from JSON
+
+    // Parse readTime
     List<int>? readTimeList;
     if (json['readTime'] != null) {
       readTimeList = (json['readTime'] as List).map((item) => item as int).toList();
     }
-    
+
+    // Parse contentTitles
+    List<String>? contentTitlesList;
+    if (json['contentTitles'] != null) {
+      contentTitlesList = (json['contentTitles'] as List).map((item) => item.toString()).toList();
+    }
+
     return EbookModel(
       id: json['_id'] ?? json['id'] ?? '',
       title: json['title'] ?? 'Untitled eBook',
-      slug: json['slug'], // Extract slug from JSON
-      description: json['description'],
-      // Map 'image' to coverImage
-      coverImage: json['image'],
-      fileUrl: json['fileUrl'], // Extract fileUrl from JSON
+      slug: json['slug'],
+      summary: json['summary'],
+      image: json['image'],
       author: json['author'] is Map ? json['author']['username'] ?? '' : json['author'] ?? '',
-      createdAt: json['createdAt'] != null 
-          ? DateTime.parse(json['createdAt']) 
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
-          ? DateTime.parse(json['updatedAt']) 
-          : null,
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
       tags: List<String>.from(json['tags'] ?? []),
-      status: json['status'] ?? 'processing',
-      // Calculate pageCount from processingProgress
-      pageCount: json['processingProgress']?['totalPages'],
-      // Check if audioCollections array is not empty
-      hasAudio: (json['audioCollections'] as List?)?.isNotEmpty ?? false,
-      // Check if questions array is not empty
-      hasQuizzes: (json['questions'] as List?)?.isNotEmpty ?? false,
-      // Calculate completion percentage from processingProgress
-      completionPercentage: json['processingProgress'] != null ?
-          (json['processingProgress']['pagesProcessed'] / 
-           (json['processingProgress']['totalPages'] > 0 ? 
-            json['processingProgress']['totalPages'] : 1)) * 100 : 0.0,
-      // Include sections for potential detailed view
-      sections: (json['sections'] as List?)?.map((section) => 
-          Map<String, dynamic>.from(section)).toList(),
-      // Include content titles for navigation
-      contentTitles: (json['contentTitles'] as List?)?.map((title) => 
-          Map<String, dynamic>.from(title)).toList(),
-      // Parse ratings data
+      readTime: readTimeList,
+      likes: likesList,
+      likeCount: json['likeCount'] ?? likesList.length,
+      commentCount: json['commentCount'] ?? 0,
       averageRating: (json['averageRating'] ?? 0.0).toDouble(),
       ratingCount: json['ratingCount'] ?? 0,
-      // Parse readTime
-      readTime: readTimeList,
-      // Get processing error if present
-      processingError: json['processingError'],
-      likes: likesList,
-      likeCount: likesList.length,
+      free: json['free'] ?? false,
+      prizePerChapter: json['prizePerChapter'] ?? 5,
+      completed: json['completed'] ?? true,
+      contentTitles: contentTitlesList,
       isLikedByCurrentUser: isLiked,
       userRating: userRating,
-      isInReadingList: json['isInReadingList'] ?? false, // Parse isInReadingList
+      isInReadingList: json['isInReadingList'] ?? false,
+      contentCount: json['contentCount'] ?? 0,
+      pricePerChapter: (json['pricePerChapter'] ?? 0.0).toDouble(),
     );
   }
 
+  // Equatable props for equality comparison
   @override
   List<Object?> get props => [
-    id, title, slug, description, coverImage, author, 
-    createdAt, updatedAt, tags, status, fileUrl, pageCount, // Add fileUrl here
-    hasAudio, hasQuizzes, completionPercentage,
-    likes, likeCount, isLikedByCurrentUser, averageRating, ratingCount, userRating,
-    readTime, contentTitles, sections, processingError, isInReadingList // Add isInReadingList
-  ];
+        id,
+        title,
+        slug,
+        summary,
+        image,
+        author,
+        createdAt,
+        updatedAt,
+        tags,
+        readTime,
+        likes,
+        likeCount,
+        commentCount,
+        averageRating,
+        ratingCount,
+        free,
+        prizePerChapter,
+        completed,
+        contentTitles,
+        isLikedByCurrentUser,
+        userRating,
+        isInReadingList,
+        contentCount,
+        pricePerChapter,
+      ];
 }
 
 class PaginationModel {

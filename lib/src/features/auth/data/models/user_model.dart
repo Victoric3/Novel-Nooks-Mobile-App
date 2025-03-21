@@ -4,42 +4,61 @@ class UserModel {
   final String id;
   final String firstname;
   final String lastname;
-  final String birthdate;
-  final List<String> interests;
-  final bool isAnonymous;
-  final String? anonymousId;
-  final String accountType;
-  final String? grade;
-  final bool temporary;
   final String username;
-  final String photo;
   final String email;
-  final String emailStatus;
+  final String photo;
   final String role;
-  final int readListLength;
-  final List<dynamic> audioCollections;
-  final List<dynamic> preferences;
+  final List<String> interests;
+  final bool isPremium;
+  final int coins;
+  final List<dynamic> purchased;
+  final bool emailVerified;
 
-  UserModel({
+  const UserModel({
     required this.id,
     required this.firstname,
     required this.lastname,
-    required this.birthdate,
-    required this.interests,
-    required this.isAnonymous,
-    this.anonymousId,
-    required this.accountType,
-    this.grade,
-    required this.temporary,
     required this.username,
-    required this.photo,
     required this.email,
-    required this.emailStatus,
+    required this.photo,
     required this.role,
-    required this.readListLength,
-    required this.audioCollections,
-    required this.preferences,
+    this.interests = const [],
+    this.isPremium = false,
+    this.coins = 0,
+    this.purchased = const [],
+    this.emailVerified = false,
   });
+
+  // Create a copy of the model with updated fields
+  UserModel copyWith({
+    String? id,
+    String? firstname,
+    String? lastname,
+    String? username,
+    String? email,
+    String? photo,
+    String? role,
+    List<String>? interests,
+    bool? isPremium,
+    int? coins,
+    List<dynamic>? purchased,
+    bool? emailVerified,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      firstname: firstname ?? this.firstname,
+      lastname: lastname ?? this.lastname,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      photo: photo ?? this.photo,
+      role: role ?? this.role,
+      interests: interests ?? this.interests,
+      isPremium: isPremium ?? this.isPremium,
+      coins: coins ?? this.coins,
+      purchased: purchased ?? this.purchased,
+      emailVerified: emailVerified ?? this.emailVerified,
+    );
+  }
 
   factory UserModel.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
@@ -47,21 +66,15 @@ class UserModel {
         id: '',
         firstname: '',
         lastname: '',
-        birthdate: 'Not available',
-        interests: [],
-        isAnonymous: false,
-        anonymousId: '',
-        accountType: 'registered',
-        grade: '',
-        temporary: false,
         username: 'Guest',
-        photo: '',
         email: '',
-        emailStatus: 'pending',
+        photo: '',
         role: 'user',
-        readListLength: 0,
-        audioCollections: [],
-        preferences: [],
+        interests: [],
+        isPremium: false,
+        coins: 0,
+        purchased: [],
+        emailVerified: false,
       );
     }
     
@@ -69,21 +82,15 @@ class UserModel {
       id: json['_id'] ?? '',
       firstname: json['firstname'] ?? '',
       lastname: json['lastname'] ?? '',
-      birthdate: json['birthdate'] ?? 'Not available',
-      interests: List<String>.from(json['interests'] ?? []),
-      isAnonymous: json['isAnonymous'] ?? false,
-      anonymousId: json['anonymousId'],
-      accountType: json['accountType'] ?? 'registered',
-      grade: json['grade'],
-      temporary: json['temporary'] ?? false,
       username: json['username'] ?? '',
-      photo: json['photo'] ?? '',
       email: json['email'] ?? '',
-      emailStatus: json['emailStatus'] ?? 'pending',
+      photo: json['photo'] ?? '',
       role: json['role'] ?? 'user',
-      readListLength: json['readListLength'] ?? 0,
-      audioCollections: json['audioCollections'] ?? [],
-      preferences: json['preferences'] ?? [],
+      interests: List<String>.from(json['interests'] ?? []),
+      isPremium: json['isPremium'] ?? false,
+      coins: json['coins'] ?? 0,
+      purchased: json['purchased'] ?? [],
+      emailVerified: json['emailVerified'] ?? false,
     );
   }
 
@@ -92,21 +99,15 @@ class UserModel {
       '_id': id,
       'firstname': firstname,
       'lastname': lastname,
-      'birthdate': birthdate,
-      'interests': interests,
-      'isAnonymous': isAnonymous,
-      'anonymousId': anonymousId,
-      'accountType': accountType,
-      'grade': grade,
-      'temporary': temporary,
       'username': username,
-      'photo': photo,
       'email': email,
-      'emailStatus': emailStatus,
+      'photo': photo,
       'role': role,
-      'readListLength': readListLength,
-      'audioCollections': audioCollections,
-      'preferences': preferences,
+      'interests': interests,
+      'isPremium': isPremium,
+      'coins': coins,
+      'purchased': purchased,
+      'emailVerified': emailVerified,
     };
   }
 

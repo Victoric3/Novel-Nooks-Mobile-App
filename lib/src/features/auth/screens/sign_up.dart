@@ -701,46 +701,6 @@ class _BookmarkTitle extends StatelessWidget {
   }
 }
 
-class _GenreChip extends StatelessWidget {
-  final String label;
-  final bool isDark;
-
-  const _GenreChip({
-    required this.label,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 8,
-      ),
-      decoration: BoxDecoration(
-        color: isDark 
-          ? Colors.black26
-          : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark 
-            ? AppColors.greenTeal.withOpacity(0.3)
-            : AppColors.brandOrange.withOpacity(0.3),
-        ),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isDark 
-            ? Colors.white70
-            : Colors.black54,
-        ),
-      ),
-    );
-  }
-}
-
 class _PasswordStrengthIndicator extends StatelessWidget {
   final String password;
   final bool isDark;
