@@ -393,6 +393,7 @@ class LibraryRepository {
     }
   }
 
+
   Future<Uint8List> fetchEbookFile(String fileUrl, {Function(double, int)? onProgress}) async {
     try {
       final response = await DioConfig.dio?.get(

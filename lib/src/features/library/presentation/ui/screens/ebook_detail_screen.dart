@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:auto_route/auto_route.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:confetti/confetti.dart';
+import 'package:dio/dio.dart';
 import 'package:novelnooks/src/common/common.dart';
 import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:novelnooks/src/features/auth/providers/user_provider.dart';
@@ -47,11 +49,13 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
   Timer? _statusCheckTimer;
   bool _hasCleanedUp = false;
   bool _isSummaryExpanded = false; // Initially collapsed
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
-
+     
+    _confettiController = ConfettiController(duration: const Duration(seconds: 2));
     // If we have the ebook from navigation, use it immediately
     Future.microtask(() {
       ref.read(ebookDetailProvider.notifier).setCurrentEbook(widget.ebook);
@@ -65,6 +69,7 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
 
   @override
   void dispose() {
+    _confettiController.dispose();
     _statusCheckTimer?.cancel();
     super.dispose();
   }
@@ -142,41 +147,42 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Title and rating
-                    Row(
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Title and author info
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                ebook.title,
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Published ${timeago.format(ebook.createdAt)}',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color:
-                                      isDark ? Colors.white60 : Colors.black54,
-                                ),
-                              ),
-                            ],
+                        Text(
+                          ebook.title,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
-
-                        // Reading list button
-                        _buildBookmarkButton(isDark, ebook, ref),
-
-                        const SizedBox(width: 8),
-                        // Like button
-                        _buildLikeButton(isDark, ebook),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Published ${timeago.format(ebook.createdAt)}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color:
+                                isDark ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                        
+                        // Add spacing
+                        const SizedBox(height: 16),
+                        
+                        // Action buttons in their own row
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            _buildBookmarkButton(isDark, ebook, ref),
+                            const SizedBox(width: 16), // Increased spacing between buttons
+                            _buildLikeButton(isDark, ebook),
+                            const SizedBox(width: 16), // Increased spacing between buttons
+                            _buildGiftButton(isDark, ebook),
+                          ],
+                        ),
                       ],
                     ),
 
@@ -396,7 +402,7 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
             );
           },
           child: Text(
-            '${ebook.likeCount}',
+            '${ebook.likeCount} ${ebook.likeCount > 1 ? 'Likes' : 'Like'}',
             key: ValueKey<int>(ebook.likeCount), // Key for proper animation
             style: TextStyle(
               fontSize: 14,
@@ -679,7 +685,513 @@ class _EbookDetailScreenState extends ConsumerState<EbookDetailScreen> {
     }
   }
 
-// Add this new method for the read button
+Widget _buildGiftButton(bool isDark, EbookModel ebook) {
+  return Column(
+    children: [
+      InkWell(
+        onTap: () => _showGiftModal(context, isDark, ebook),
+        borderRadius: BorderRadius.circular(50),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.purple.withOpacity(0.2) : Colors.purple.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: isDark ? Colors.purple.withOpacity(0.4) : Colors.purple.withOpacity(0.3),
+              width: 1.5,
+            ),
+          ),
+          child: Icon(
+            MdiIcons.giftOutline,
+            color: isDark ? Colors.purple[300] : Colors.purple[600],
+            size: 24,
+          ),
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        'Gift',
+        style: TextStyle(
+          fontSize: 12,
+          color: isDark ? Colors.white70 : Colors.black54,
+        ),
+      ),
+    ],
+  );
+}
+
+void _showGiftModal(BuildContext context, bool isDark, EbookModel ebook) {
+  // Pre-check if user has coins
+  final user = ref.read(userProvider).valueOrNull;
+  if (user == null) {
+    NotificationService().showNotification(
+      message: 'Please sign in to gift coins',
+      type: NotificationType.error,
+    );
+    return;
+  }
+  
+  // Get the author ID from the ebook
+  final authorId = ebook.authorId;
+  
+  // Create a scrim color with proper opacity like the comment section
+  final scrimColor = Colors.black.withOpacity(0.5);
+  
+  // Initial gift amount
+  int selectedAmount = 50;
+  final userCoins = user.coins;
+
+  // Show the bottom sheet
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: true,
+    enableDrag: true,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
+    constraints: BoxConstraints(
+      maxHeight: MediaQuery.of(context).size.height,
+    ),
+    barrierColor: scrimColor,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return FractionallySizedBox(
+            heightFactor: 0.9,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Container(
+                color: isDark ? AppColors.darkBg : Colors.white,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+                  child: Column(
+                    children: [
+                      // Header
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.black12 : Colors.grey[50],
+                          border: Border(
+                            bottom: BorderSide(
+                              color: isDark ? Colors.white10 : Colors.black12,
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              MdiIcons.giftOutline,
+                              color: isDark ? Colors.purple[300] : Colors.purple[600],
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Gift Coins to Author',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              icon: const Icon(Icons.close),
+                              color: isDark ? Colors.white70 : Colors.black54,
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Current balance
+                      Container(
+                        margin: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.black26 : Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.account_balance_wallet,
+                              color: isDark ? Colors.amber : Colors.amber[700],
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Your Balance',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: isDark ? Colors.white70 : Colors.black54,
+                                  ),
+                                ),
+                                Text(
+                                  '$userCoins coins',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Coin selection
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Select amount to gift',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Coin presets with Wrap
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              alignment: WrapAlignment.center,
+                              children: [
+                                _buildCoinOption(50, selectedAmount, isDark, (amount) {
+                                  setState(() => selectedAmount = amount);
+                                }),
+                                _buildCoinOption(100, selectedAmount, isDark, (amount) {
+                                  setState(() => selectedAmount = amount);
+                                }),
+                                _buildCoinOption(200, selectedAmount, isDark, (amount) {
+                                  setState(() => selectedAmount = amount);
+                                }),
+                                _buildCoinOption(500, selectedAmount, isDark, (amount) {
+                                  setState(() => selectedAmount = amount);
+                                }),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            
+                            // Custom amount
+                            Text(
+                              'Or enter custom amount:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                hintText: 'Enter coin amount',
+                                prefixIcon: Icon(
+                                  MdiIcons.currencyUsd,
+                                  color: isDark ? Colors.amber : Colors.amber[700],
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.white30 : Colors.black26,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: isDark ? Colors.purple[300]! : Colors.purple[600]!,
+                                  ),
+                                ),
+                              ),
+                              onChanged: (value) {
+                                if (value.isNotEmpty) {
+                                  final amount = int.tryParse(value);
+                                  if (amount != null && amount > 0) {
+                                    setState(() => selectedAmount = amount);
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Gift button
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 56,
+                          child: ElevatedButton(
+                            onPressed: userCoins >= selectedAmount 
+                                ? () => _processGift(context, authorId, selectedAmount)
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isDark ? Colors.purple[600] : Colors.purple[500],
+                              foregroundColor: Colors.white,
+                              disabledBackgroundColor: isDark ? Colors.grey[800] : Colors.grey[300],
+                              disabledForegroundColor: isDark ? Colors.white30 : Colors.black38,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: userCoins >= selectedAmount
+                                ? Text(
+                                    'Gift $selectedAmount Coins',
+                                    style: const TextStyle(
+                                      fontSize: 16, 
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : Text(
+                                    'Not Enough Coins',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                      
+                      // Optional bottom spacing for better layout when scrolling
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
+}
+Widget _buildCoinOption(int amount, int selectedAmount, bool isDark, Function(int) onSelect) {
+  final isSelected = amount == selectedAmount;
+  
+  return GestureDetector(
+    onTap: () => onSelect(amount),
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 70,
+      height: 80,
+      decoration: BoxDecoration(
+        color: isSelected 
+            ? (isDark ? Colors.purple[900] : Colors.purple[100]) 
+            : (isDark ? Colors.black26 : Colors.white),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected
+              ? (isDark ? Colors.purple[300]! : Colors.purple[600]!)
+              : (isDark ? Colors.white24 : Colors.black12),
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            MdiIcons.currencyUsd, // Use currencyUsd instead of coin
+            color: isSelected
+                ? (isDark ? Colors.amber : Colors.amber[700])
+                : (isDark ? Colors.amber[700]!.withOpacity(0.6) : Colors.amber[300]),
+            size: 24,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '$amount',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected
+                  ? (isDark ? Colors.white : Colors.black87)
+                  : (isDark ? Colors.white70 : Colors.black54),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _processGift(BuildContext context, String authorId, int amount) async {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  
+  try {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(
+          color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
+        ),
+      ),
+    );
+    
+    // Call the API to process the gift
+    final dio = ref.read(dioProvider);
+    final response = await dio.post(
+      '/premium/giftToAuthor',
+      data: {
+        'authorId': authorId,
+        'coins': amount,
+      },
+    );
+    
+    // Close loading dialog
+    Navigator.pop(context);
+    
+    // Close gift modal
+    Navigator.pop(context);
+    
+    // Show success message
+    NotificationService().showNotification(
+      message: response.data['message'] ?? 'Gift sent successfully!',
+      type: NotificationType.success,
+      duration: const Duration(seconds: 3),
+    );
+    
+    // Update user coins
+    ref.read(userProvider.notifier).refreshUser();
+    
+    // Add confetti animation
+    _showGiftConfetti(context);
+    
+  } catch (e) {
+    // Close loading dialog
+    Navigator.pop(context);
+    
+    // Show error message
+    NotificationService().showNotification(
+      message: e is DioException 
+          ? e.response?.data['errorMessage'] ?? 'Failed to send gift'
+          : 'Failed to send gift',
+      type: NotificationType.error,
+      duration: const Duration(seconds: 3),
+    );
+  }
+}
+
+void _showGiftConfetti(BuildContext context) {
+  // Start the confetti animation
+  _confettiController.play();
+
+  // Show a gift confirmation overlay
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Confetti
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirectionality: BlastDirectionality.explosive,
+              particleDrag: 0.05,
+              emissionFrequency: 0.05,
+              numberOfParticles: 20,
+              gravity: 0.1,
+              colors: const [
+                Colors.purple,
+                Colors.amber,
+                Colors.pink,
+                Colors.blue,
+                Colors.green,
+              ],
+            ),
+          ),
+          
+          // Gift success message
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark 
+                  ? AppColors.darkBg 
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                 Icon(
+                  MdiIcons.gift,
+                  color: Colors.purple,
+                  size: 64,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Thank You!',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white 
+                        : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Your gift has been sent to the author',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white70 
+                        : Colors.black54,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(200, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text('Awesome!'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 Widget _buildReadButton(bool isDark, EbookModel ebook) {
   // Determine button text based on free status and user premium status
   final userIsPremium = ref.watch(userProvider).valueOrNull?.isPremium ?? false;
@@ -1284,6 +1796,13 @@ Widget _buildBookmarkButton(bool isDark, EbookModel ebook, WidgetRef ref) {
         ),
       ),
       const SizedBox(height: 4),
+      Text(
+        'Bookmark',
+        style: TextStyle(
+          fontSize: 12,
+          color: isDark ? Colors.white70 : Colors.black54,
+        ),
+      ),
     ],
   );
 }

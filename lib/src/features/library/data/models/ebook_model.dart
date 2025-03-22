@@ -7,6 +7,7 @@ class EbookModel extends Equatable {
   final String? summary;
   final String? image;
   final String author;
+  final String authorId;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final List<String> tags;
@@ -35,6 +36,7 @@ class EbookModel extends Equatable {
     this.summary,
     this.image,
     required this.author,
+    required this.authorId,
     required this.createdAt,
     this.updatedAt,
     this.tags = const [],
@@ -63,6 +65,7 @@ class EbookModel extends Equatable {
     String? summary,
     String? image,
     String? author,
+    String? authorId,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<String>? tags,
@@ -89,6 +92,7 @@ class EbookModel extends Equatable {
       summary: summary ?? this.summary,
       image: image ?? this.image,
       author: author ?? this.author,
+      authorId: authorId ?? this.authorId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       tags: tags ?? this.tags,
@@ -153,6 +157,7 @@ class EbookModel extends Equatable {
       summary: json['summary'],
       image: json['image'],
       author: json['author'] is Map ? json['author']['username'] ?? '' : json['author'] ?? '',
+      authorId: json['author'] is Map ? json['author']['_id'] ?? '' : json['authorId'] ?? '',
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),

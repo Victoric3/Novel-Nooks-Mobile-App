@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter_epub_viewer/flutter_epub_viewer.dart';
@@ -157,31 +156,18 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               ],
             )
           : null,
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent, // Critical for reliable detection
-        onTap: () {
-          print('Screen tapped - toggling UI visibility');
-          setState(() {
-            _showUI = !_showUI;
-            print('UI visibility set to: $_showUI');
-          });
-        },
-        onDoubleTap: () {
-          print('Screen double-tapped');
-          setState(() {
-            _showUI = !_showUI;
-            print('UI visibility set to: $_showUI');
-          });
-        },
-        child: Stack(
-          children: [
-            state.isLoading
-                ? _buildLoadingView(state.downloadProgress)
-                : state.errorMessage != null
-                    ? _buildErrorView(state.errorMessage!)
-                    : state.epubFilePath == null
-                        ? Center(child: Text('No content available', style: Theme.of(context).textTheme.bodyLarge))
-                        : EpubViewer(
+      body: Stack(
+        children: [
+          // Conditional widget: loading, error, or EpubViewer with padding
+          state.isLoading
+              ? _buildLoadingView(state.downloadProgress)
+              : state.errorMessage != null
+                  ? _buildErrorView(state.errorMessage!)
+                  : state.epubFilePath == null
+                      ? Center(child: Text('No content available', style: Theme.of(context).textTheme.bodyLarge))
+                      : Padding(
+                          padding: EdgeInsets.only(bottom: 100), // Increased padding to prevent text overflow
+                          child: EpubViewer(
                             epubController: _epubController,
                             epubSource: EpubSource.fromFile(File(state.epubFilePath!)),
                             initialCfi: _parseInitialCfi(_lastCfi),
@@ -216,42 +202,105 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                             },
                             onTextSelected: (selection) => _showTextSelectionMenu(context, selection),
                           ),
-            if (!state.isLoading && state.errorMessage == null && state.epubFilePath != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: LinearProgressIndicator(
-                  value: _currentProgress,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
-                  minHeight: 2,
-                ),
+                        ),
+          // Progress indicator at the bottom
+          if (!state.isLoading && state.errorMessage == null && state.epubFilePath != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: LinearProgressIndicator(
+                value: _currentProgress,
+                backgroundColor: Colors.transparent,
+                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                minHeight: 2,
               ),
-            if (_showUI && !state.isLoading && state.errorMessage == null && state.epubFilePath != null)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: SafeArea(
-                  child: _buildBottomNavigationBar(),
-                ),
-              ),
-            if (kDebugMode && !_showUI)
-              Positioned(
-                top: 10,
-                right: 10,
+            ),
+          // Double-tap GestureDetector to toggle UI
+          Positioned.fill(
+            child: GestureDetector(
+              onDoubleTap: () {
+                print('Double tap detected');
+                setState(() {
+                  _showUI = !_showUI;
+                });
+              },
+              behavior: HitTestBehavior.translucent, // Allows swipes to pass through to EpubViewer
+            ),
+          ),
+          // Bottom navigation bar when UI is shown
+          if (_showUI && !state.isLoading && state.errorMessage == null && state.epubFilePath != null)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
                 child: Container(
-                  width: 10,
-                  height: 10,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
+                    color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        offset: const Offset(0, -2),
+                        blurRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.skip_previous, color: Theme.of(context).iconTheme.color),
+                        onPressed: () {
+                          print('Previous button pressed'); // Debug print to confirm tap
+                          _epubController.prev();
+                        },
+                      ),
+                      Text(
+                        '${(_currentProgress * 100).toInt()}%',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.skip_next, color: Theme.of(context).iconTheme.color),
+                        onPressed: () {
+                          print('Next button pressed'); // Debug print to confirm tap
+                          _epubController.next();
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+          // Tap areas to show UI when hidden
+          if (!_showUI)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 50,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _showUI = true);
+                },
+                behavior: HitTestBehavior.translucent,
+              ),
+            ),
+          if (!_showUI)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 50,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => _showUI = true);
+                },
+                behavior: HitTestBehavior.translucent,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -293,35 +342,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   onTap: () {
                     _epubController.display(cfi: chapter.href);
                     Navigator.pop(context);
-                    setState(() => _showUI = false);
                   },
                 );
               },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), offset: const Offset(0, -2), blurRadius: 4)],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          IconButton(
-            icon: Icon(Icons.skip_previous, color: Theme.of(context).iconTheme.color),
-            onPressed: () => _epubController.prev(),
-          ),
-          Text('${(_currentProgress * 100).toInt()}%', style: Theme.of(context).textTheme.bodySmall),
-          IconButton(
-            icon: Icon(Icons.skip_next, color: Theme.of(context).iconTheme.color),
-            onPressed: () => _epubController.next(),
           ),
         ],
       ),
@@ -424,7 +448,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   onChanged: (value) {
                     setModalState(() => _fontSize = value);
                     setState(() => _fontSize = value);
-                    _epubController.setFontSize(fontSize: value);
+                    _epubController.setFontSize(fontSize: value); // Note: Enable if supported by package
                   },
                 ),
               ),
