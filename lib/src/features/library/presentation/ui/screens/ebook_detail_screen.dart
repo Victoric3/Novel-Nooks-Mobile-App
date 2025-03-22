@@ -984,6 +984,7 @@ void _showGiftModal(BuildContext context, bool isDark, EbookModel ebook) {
     },
   );
 }
+
 Widget _buildCoinOption(int amount, int selectedAmount, bool isDark, Function(int) onSelect) {
   final isSelected = amount == selectedAmount;
   
@@ -1797,7 +1798,7 @@ Widget _buildBookmarkButton(bool isDark, EbookModel ebook, WidgetRef ref) {
       ),
       const SizedBox(height: 4),
       Text(
-        'Bookmark',
+        isInReadingList? 'Bookmarked' : 'Bookmark',
         style: TextStyle(
           fontSize: 12,
           color: isDark ? Colors.white70 : Colors.black54,
