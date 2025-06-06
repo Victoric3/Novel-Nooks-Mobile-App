@@ -58,9 +58,13 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void initState() {
     super.initState();
     _epubController = EpubController();
-    _isDarkMode = WidgetsBinding.instance.platformDispatcher.platformBrightness == Brightness.dark;
+    _isDarkMode =
+        WidgetsBinding.instance.platformDispatcher.platformBrightness ==
+        Brightness.dark;
     Future.microtask(() {
-      ref.read(readerProvider.notifier).loadEpub(
+      ref
+          .read(readerProvider.notifier)
+          .loadEpub(
             widget.storyId,
             widget.title,
             widget.isFree,
@@ -101,7 +105,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   }
 
   Future<void> _loadLastPosition() async {
-    final position = await ref.read(readerServiceProvider).getLastReadingPosition(widget.storyId);
+    final position = await ref
+        .read(readerServiceProvider)
+        .getLastReadingPosition(widget.storyId);
     if (position != null) {
       setState(() {
         _lastCfi = position;
@@ -124,7 +130,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(readerProvider);
 
-    if (state.previewMode && !_hasShownPaymentModal && !state.isLoading && state.epubFilePath != null) {
+    if (state.previewMode &&
+        !_hasShownPaymentModal &&
+        !state.isLoading &&
+        state.epubFilePath != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _showPaymentModal(context);
         _hasShownPaymentModal = true;
@@ -135,76 +144,110 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       key: _scaffoldKey,
       backgroundColor: _isDarkMode ? const Color(0xFF121212) : Colors.white,
       drawer: _buildTableOfContentsDrawer(),
-      appBar: _showUI
-          ? AppBar(
-              title: Text(widget.title, style: Theme.of(context).textTheme.titleLarge),
-              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-              elevation: 0,
-              leading: IconButton(
-                icon: Icon(Icons.arrow_back, color: Theme.of(context).iconTheme.color),
-                onPressed: () => context.router.pop(),
-              ),
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.list, color: Theme.of(context).iconTheme.color),
-                  onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+      appBar:
+          _showUI
+              ? AppBar(
+                title: Text(
+                  widget.title,
+                  style: Theme.of(context).textTheme.titleLarge,
                 ),
-                IconButton(
-                  icon: Icon(Icons.settings, color: Theme.of(context).iconTheme.color),
-                  onPressed: () => _showReaderSettings(context),
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+                elevation: 0,
+                leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back,
+                    color: Theme.of(context).iconTheme.color,
+                  ),
+                  onPressed: () => context.router.pop(),
                 ),
-              ],
-            )
-          : null,
+                actions: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.list,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.settings,
+                      color: Theme.of(context).iconTheme.color,
+                    ),
+                    onPressed: () => _showReaderSettings(context),
+                  ),
+                ],
+              )
+              : null,
       body: Stack(
         children: [
           // Conditional widget: loading, error, or EpubViewer with padding
           state.isLoading
               ? _buildLoadingView(state.downloadProgress)
               : state.errorMessage != null
-                  ? _buildErrorView(state.errorMessage!)
-                  : state.epubFilePath == null
-                      ? Center(child: Text('No content available', style: Theme.of(context).textTheme.bodyLarge))
-                      : Padding(
-                          padding: EdgeInsets.only(bottom: 100), // Increased padding to prevent text overflow
-                          child: EpubViewer(
-                            epubController: _epubController,
-                            epubSource: EpubSource.fromFile(File(state.epubFilePath!)),
-                            initialCfi: _parseInitialCfi(_lastCfi),
-                            displaySettings: EpubDisplaySettings(
-                              flow: _currentFlow,
-                              snap: true,
-                              theme: _isDarkMode ? EpubTheme.dark() : EpubTheme.light(),
-                            ),
-                            onEpubLoaded: () {
-                              Future.delayed(const Duration(milliseconds: 500), () {
-                                final chapters = _epubController.getChapters();
-                                if (chapters.isNotEmpty) {
-                                  setState(() => _chapters = chapters);
-                                  if (_lastCfi == null && chapters.length > 1) {
-                                    final startIndex = chapters[0].title.toLowerCase().contains('cover') ? 1 : 0;
-                                    if (startIndex < chapters.length) {
-                                      _epubController.display(cfi: chapters[startIndex].href);
-                                    }
-                                  }
-                                }
-                              });
-                            },
-                            onChaptersLoaded: (chapters) => setState(() => _chapters = chapters),
-                            onRelocated: (location) {
-                              setState(() => _currentProgress = location.progress);
-                              final locationData = {
-                                'startCfi': location.startCfi,
-                                'endCfi': location.endCfi,
-                                'progress': location.progress,
-                              };
-                              ref.read(readerServiceProvider).saveReadingPosition(widget.storyId, jsonEncode(locationData));
-                            },
-                            onTextSelected: (selection) => _showTextSelectionMenu(context, selection),
-                          ),
-                        ),
+              ? _buildErrorView(state.errorMessage!)
+              : state.epubFilePath == null
+              ? Center(
+                child: Text(
+                  'No content available',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              )
+              : Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 100,
+                ), // Increased padding to prevent text overflow
+                child: EpubViewer(
+                  epubController: _epubController,
+                  epubSource: EpubSource.fromFile(File(state.epubFilePath!)),
+                  initialCfi: _parseInitialCfi(_lastCfi),
+                  displaySettings: EpubDisplaySettings(
+                    flow: _currentFlow,
+                    snap: true,
+                    theme: _isDarkMode ? EpubTheme.dark() : EpubTheme.light(),
+                  ),
+                  onEpubLoaded: () {
+                    Future.delayed(const Duration(milliseconds: 500), () {
+                      final chapters = _epubController.getChapters();
+                      if (chapters.isNotEmpty) {
+                        setState(() => _chapters = chapters);
+                        if (_lastCfi == null && chapters.length > 1) {
+                          final startIndex =
+                              chapters[0].title.toLowerCase().contains('cover')
+                                  ? 1
+                                  : 0;
+                          if (startIndex < chapters.length) {
+                            _epubController.display(
+                              cfi: chapters[startIndex].href,
+                            );
+                          }
+                        }
+                      }
+                    });
+                  },
+                  onChaptersLoaded:
+                      (chapters) => setState(() => _chapters = chapters),
+                  onRelocated: (location) {
+                    setState(() => _currentProgress = location.progress);
+                    final locationData = {
+                      'startCfi': location.startCfi,
+                      'endCfi': location.endCfi,
+                      'progress': location.progress,
+                    };
+                    ref
+                        .read(readerServiceProvider)
+                        .saveReadingPosition(
+                          widget.storyId,
+                          jsonEncode(locationData),
+                        );
+                  },
+                  onTextSelected:
+                      (selection) => _showTextSelectionMenu(context, selection),
+                ),
+              ),
           // Progress indicator at the bottom
-          if (!state.isLoading && state.errorMessage == null && state.epubFilePath != null)
+          if (!state.isLoading &&
+              state.errorMessage == null &&
+              state.epubFilePath != null)
             Positioned(
               left: 0,
               right: 0,
@@ -212,7 +255,9 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               child: LinearProgressIndicator(
                 value: _currentProgress,
                 backgroundColor: Colors.transparent,
-                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  Theme.of(context).primaryColor,
+                ),
                 minHeight: 2,
               ),
             ),
@@ -225,20 +270,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                   _showUI = !_showUI;
                 });
               },
-              behavior: HitTestBehavior.translucent, // Allows swipes to pass through to EpubViewer
+              behavior:
+                  HitTestBehavior
+                      .translucent, // Allows swipes to pass through to EpubViewer
             ),
           ),
           // Bottom navigation bar when UI is shown
-          if (_showUI && !state.isLoading && state.errorMessage == null && state.epubFilePath != null)
+          if (_showUI &&
+              !state.isLoading &&
+              state.errorMessage == null &&
+              state.epubFilePath != null)
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
               child: SafeArea(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor.withOpacity(0.9),
+                    color: Theme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withOpacity(0.9),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.1),
@@ -251,9 +306,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.skip_previous, color: Theme.of(context).iconTheme.color),
+                        icon: Icon(
+                          Icons.skip_previous,
+                          color: Theme.of(context).iconTheme.color,
+                        ),
                         onPressed: () {
-                          print('Previous button pressed'); // Debug print to confirm tap
+                          print(
+                            'Previous button pressed',
+                          ); // Debug print to confirm tap
                           _epubController.prev();
                         },
                       ),
@@ -262,9 +322,14 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       IconButton(
-                        icon: Icon(Icons.skip_next, color: Theme.of(context).iconTheme.color),
+                        icon: Icon(
+                          Icons.skip_next,
+                          color: Theme.of(context).iconTheme.color,
+                        ),
                         onPressed: () {
-                          print('Next button pressed'); // Debug print to confirm tap
+                          print(
+                            'Next button pressed',
+                          ); // Debug print to confirm tap
                           _epubController.next();
                         },
                       ),
@@ -312,21 +377,34 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: Theme.of(context).primaryColor.withOpacity(0.1)),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withOpacity(0.1),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Table of Contents', style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  'Table of Contents',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 const SizedBox(height: 8),
-                Text(widget.title, style: Theme.of(context).textTheme.bodyMedium),
+                Text(
+                  widget.title,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 16),
                 LinearProgressIndicator(
                   value: _currentProgress,
                   backgroundColor: Theme.of(context).dividerColor,
-                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).primaryColor,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text('${(_currentProgress * 100).toInt()}% read', style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  '${(_currentProgress * 100).toInt()}% read',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -338,7 +416,10 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
                 final chapter = _chapters[index];
                 return ListTile(
                   dense: true,
-                  title: Text(chapter.title, style: Theme.of(context).textTheme.bodyMedium),
+                  title: Text(
+                    chapter.title,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
                   onTap: () {
                     _epubController.display(cfi: chapter.href);
                     Navigator.pop(context);
@@ -352,15 +433,22 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     );
   }
 
-  void _showTextSelectionMenu(BuildContext context, EpubTextSelection selection) {
+  void _showTextSelectionMenu(
+    BuildContext context,
+    EpubTextSelection selection,
+  ) {
     try {
       final selectionText = selection.toString();
-      print('Selection: $selectionText');
-      final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+      final overlay =
+          Overlay.of(context).context.findRenderObject() as RenderBox;
       showMenu(
         context: context,
         position: RelativeRect.fromRect(
-          Rect.fromCenter(center: MediaQuery.of(context).size.center(Offset.zero), width: 100, height: 100),
+          Rect.fromCenter(
+            center: MediaQuery.of(context).size.center(Offset.zero),
+            width: 100,
+            height: 100,
+          ),
           Offset.zero & overlay.size,
         ),
         items: [
@@ -370,7 +458,11 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
               title: const Text('Highlight'),
               onTap: () {
                 try {
-                  _epubController.addHighlight(cfi: selectionText, color: Colors.yellow, opacity: 0.5);
+                  _epubController.addHighlight(
+                    cfi: selectionText,
+                    color: Colors.yellow,
+                    opacity: 0.5,
+                  );
                 } catch (e) {
                   print('Error highlighting: $e');
                 }
@@ -389,119 +481,159 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Container(
-          height: MediaQuery.of(context).size.height * 0.8,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setModalState) => Container(
+                  height: MediaQuery.of(context).size.height * 0.8,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(16),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Settings',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 16),
+                      ListTile(
+                        title: Text(
+                          'Dark Mode',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        trailing: Switch(
+                          value: _isDarkMode,
+                          onChanged: (value) {
+                            setModalState(() => _isDarkMode = value);
+                            setState(() => _isDarkMode = value);
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          'Reading Mode',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        trailing: DropdownButton<EpubFlow>(
+                          value: _currentFlow,
+                          onChanged: (value) {
+                            if (value != null) {
+                              setModalState(() => _currentFlow = value);
+                              setState(() => _currentFlow = value);
+                              _epubController.setFlow(flow: value);
+                            }
+                          },
+                          items: const [
+                            DropdownMenuItem(
+                              value: EpubFlow.paginated,
+                              child: Text('Paginated'),
+                            ),
+                            DropdownMenuItem(
+                              value: EpubFlow.scrolled,
+                              child: Text('Scrolled'),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          'Font Size',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        subtitle: Slider(
+                          value: _fontSize,
+                          min: 12,
+                          max: 24,
+                          divisions: 12,
+                          label: _fontSize.round().toString(),
+                          onChanged: (value) {
+                            setModalState(() => _fontSize = value);
+                            setState(() => _fontSize = value);
+                            _epubController.setFontSize(
+                              fontSize: value,
+                            ); // Note: Enable if supported by package
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          'Font Family',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        trailing: DropdownButton<String>(
+                          value: _currentFontFamily,
+                          onChanged: (value) {
+                            if (value != null) {
+                              setModalState(() => _currentFontFamily = value);
+                              setState(() => _currentFontFamily = value);
+                              // Note: Add font family support if package allows in future
+                            }
+                          },
+                          items:
+                              _fontFamilies.map((font) {
+                                return DropdownMenuItem(
+                                  value: font,
+                                  child: Text(font),
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          'Line Height',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        subtitle: Slider(
+                          value: _lineHeight,
+                          min: 1.0,
+                          max: 2.0,
+                          divisions: 10,
+                          label: _lineHeight.toStringAsFixed(1),
+                          onChanged: (value) {
+                            setModalState(() => _lineHeight = value);
+                            setState(() => _lineHeight = value);
+                            // Note: Add line height support if package allows in future
+                          },
+                        ),
+                      ),
+                      ListTile(
+                        title: Text(
+                          'Margin',
+                          style: Theme.of(context).textTheme.bodyLarge,
+                        ),
+                        subtitle: Slider(
+                          value: _margin,
+                          min: 0,
+                          max: 32,
+                          divisions: 16,
+                          label: _margin.round().toString(),
+                          onChanged: (value) {
+                            setModalState(() => _margin = value);
+                            setState(() => _margin = value);
+                            // Note: Add margin support if package allows in future
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(color: Colors.grey[400], borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
-              const SizedBox(height: 16),
-              ListTile(
-                title: Text('Dark Mode', style: Theme.of(context).textTheme.bodyLarge),
-                trailing: Switch(
-                  value: _isDarkMode,
-                  onChanged: (value) {
-                    setModalState(() => _isDarkMode = value);
-                    setState(() => _isDarkMode = value);
-                  },
-                ),
-              ),
-              ListTile(
-                title: Text('Reading Mode', style: Theme.of(context).textTheme.bodyLarge),
-                trailing: DropdownButton<EpubFlow>(
-                  value: _currentFlow,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setModalState(() => _currentFlow = value);
-                      setState(() => _currentFlow = value);
-                      _epubController.setFlow(flow: value);
-                    }
-                  },
-                  items: const [
-                    DropdownMenuItem(value: EpubFlow.paginated, child: Text('Paginated')),
-                    DropdownMenuItem(value: EpubFlow.scrolled, child: Text('Scrolled')),
-                  ],
-                ),
-              ),
-              ListTile(
-                title: Text('Font Size', style: Theme.of(context).textTheme.bodyLarge),
-                subtitle: Slider(
-                  value: _fontSize,
-                  min: 12,
-                  max: 24,
-                  divisions: 12,
-                  label: _fontSize.round().toString(),
-                  onChanged: (value) {
-                    setModalState(() => _fontSize = value);
-                    setState(() => _fontSize = value);
-                    _epubController.setFontSize(fontSize: value); // Note: Enable if supported by package
-                  },
-                ),
-              ),
-              ListTile(
-                title: Text('Font Family', style: Theme.of(context).textTheme.bodyLarge),
-                trailing: DropdownButton<String>(
-                  value: _currentFontFamily,
-                  onChanged: (value) {
-                    if (value != null) {
-                      setModalState(() => _currentFontFamily = value);
-                      setState(() => _currentFontFamily = value);
-                      // Note: Add font family support if package allows in future
-                    }
-                  },
-                  items: _fontFamilies.map((font) {
-                    return DropdownMenuItem(value: font, child: Text(font));
-                  }).toList(),
-                ),
-              ),
-              ListTile(
-                title: Text('Line Height', style: Theme.of(context).textTheme.bodyLarge),
-                subtitle: Slider(
-                  value: _lineHeight,
-                  min: 1.0,
-                  max: 2.0,
-                  divisions: 10,
-                  label: _lineHeight.toStringAsFixed(1),
-                  onChanged: (value) {
-                    setModalState(() => _lineHeight = value);
-                    setState(() => _lineHeight = value);
-                    // Note: Add line height support if package allows in future
-                  },
-                ),
-              ),
-              ListTile(
-                title: Text('Margin', style: Theme.of(context).textTheme.bodyLarge),
-                subtitle: Slider(
-                  value: _margin,
-                  min: 0,
-                  max: 32,
-                  divisions: 16,
-                  label: _margin.round().toString(),
-                  onChanged: (value) {
-                    setModalState(() => _margin = value);
-                    setState(() => _margin = value);
-                    // Note: Add margin support if package allows in future
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -510,10 +642,20 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(value: progress > 0 ? progress : null, color: Theme.of(context).primaryColor),
+          CircularProgressIndicator(
+            value: progress > 0 ? progress : null,
+            color: Theme.of(context).primaryColor,
+          ),
           const SizedBox(height: 16),
-          Text('Loading eBook...', style: Theme.of(context).textTheme.bodyLarge),
-          if (progress > 0) Text('${(progress * 100).toInt()}%', style: Theme.of(context).textTheme.bodySmall),
+          Text(
+            'Loading eBook...',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          if (progress > 0)
+            Text(
+              '${(progress * 100).toInt()}%',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
         ],
       ),
     );
@@ -524,24 +666,38 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.error),
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Theme.of(context).colorScheme.error,
+          ),
           const SizedBox(height: 16),
-          Text('Error Loading eBook', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            'Error Loading eBook',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(error, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
+            child: Text(
+              error,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () => ref.read(readerProvider.notifier).loadEpub(
-                  widget.storyId,
-                  widget.title,
-                  widget.isFree,
-                  widget.contentCount,
-                  widget.pricePerChapter,
-                  widget.completed,
-                ),
+            onPressed:
+                () => ref
+                    .read(readerProvider.notifier)
+                    .loadEpub(
+                      widget.storyId,
+                      widget.title,
+                      widget.isFree,
+                      widget.contentCount,
+                      widget.pricePerChapter,
+                      widget.completed,
+                    ),
             child: const Text('Try Again'),
           ),
         ],
@@ -552,23 +708,30 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   void _showPaymentModal(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Payment Required', style: Theme.of(context).textTheme.headlineSmall),
-        content: Text(
-          'This story requires ${widget.contentCount} chapters at \$${widget.pricePerChapter} each.',
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              // Implement payment logic here
-              Navigator.pop(context);
-            },
-            child: const Text('Pay'),
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Payment Required',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            content: Text(
+              'This story requires ${widget.contentCount} chapters at \$${widget.pricePerChapter} each.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  // Implement payment logic here
+                  Navigator.pop(context);
+                },
+                child: const Text('Pay'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

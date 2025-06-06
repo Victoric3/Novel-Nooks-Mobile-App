@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "804161081670-s82il3jdcdqthrk0i53n1emohfh01sgk.apps.googleusercontent.com",
+          "client_id": "804161081670-e309jbs15qqe0tggj5vpo0bpr3b5m2rm.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.novelnooks.app",
-            "certificate_hash": "7da79de3a6611e499d94bd92afffd7454c0f19bb"
+            "certificate_hash": "0600c60e559a125ff8de22980de5110eecf997ed"
           }
         },
         {

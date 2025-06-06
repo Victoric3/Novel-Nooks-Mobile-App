@@ -111,7 +111,7 @@ class LibraryRepository {
 
       // Make API call - GET request as per route `router.get("/", getAllStories)`
       final response = await DioConfig.dio?.get(
-        '/ebook/',
+        '/ebook/getAllStories',
         queryParameters: queryParams,
       );
 

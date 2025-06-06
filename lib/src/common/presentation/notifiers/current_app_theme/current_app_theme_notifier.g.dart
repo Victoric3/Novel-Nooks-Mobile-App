@@ -7,7 +7,7 @@ part of 'current_app_theme_notifier.dart';
 // **************************************************************************
 
 String _$currentAppThemeNotifierHash() =>
-    r'bfbfaaecf428557f1e32cbdbe91d610e052fa597';
+    r'ce7bff867732e12e6dcb3844d0ff81c1a854108b';
 
 /// See also [CurrentAppThemeNotifier].
 @ProviderFor(CurrentAppThemeNotifier)

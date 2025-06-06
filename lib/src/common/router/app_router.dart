@@ -6,16 +6,20 @@ import 'package:novelnooks/src/features/auth/screens/auth_screen.dart';
 import 'package:novelnooks/src/features/auth/screens/intro_page.dart';
 import 'package:novelnooks/src/features/auth/screens/reset_password_screen.dart';
 import 'package:novelnooks/src/features/auth/screens/verification_code_screen.dart';
+import 'package:novelnooks/src/features/create/presentation/ui/screens/create_book_screen.dart';
+import 'package:novelnooks/src/features/create/presentation/ui/screens/edit_book_screen.dart';
 import 'package:novelnooks/src/features/home/presentation/ui/screens/search_screen.dart';
 import 'package:novelnooks/src/features/library/data/models/ebook_model.dart';
 import 'package:novelnooks/src/features/library/presentation/ui/screens/ebook_detail_screen.dart';
-import 'package:novelnooks/src/features/reader/presentation/ui/screens/reader_screen.dart'; // Add this import
+import 'package:novelnooks/src/features/notifications/presentation/ui/screens/notifications_screen.dart';
+import 'package:novelnooks/src/features/reader/presentation/ui/screens/reader_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:novelnooks/src/features/features.dart';
+import 'package:novelnooks/src/features/explore/presentation/ui/screens/explore_screen.dart';
 
 part 'app_router.gr.dart';
 
-@AutoRouterConfig()
+@AutoRouterConfig(replaceInRouteName: 'Screen,Route')
 class AppRouter extends _$AppRouter {
   @override
   List<AutoRoute> get routes => [
@@ -40,7 +44,16 @@ class AppRouter extends _$AppRouter {
       page: SearchRoute.page,
       guards: [AuthGuard()],
     ),
-    // Add this new route
+    AutoRoute(
+      path: '/notifications',
+      page: NotificationsRoute.page,
+      guards: [AuthGuard()],
+    ),
+    AutoRoute(
+      path: '/create',
+      page: CreateBookRoute.page,
+      guards: [AuthGuard()],
+    ),
     AutoRoute(
       path: '/reader/:storyId',
       page: ReaderRoute.page,
@@ -53,6 +66,15 @@ class AppRouter extends _$AppRouter {
       page: EbookDetailRoute.page,
       guards: [AuthGuard()],
     ),
+    AutoRoute(
+      path: '/edit-book',
+      page: EditBookRoute.page,
+      guards: [AuthGuard()],
+    ),
+    AutoRoute(
+      page: ExploreRoute.page,
+      path: '/explore',
+    ),
     CustomRoute(
       page: TabsRoute.page,
       path: '/tabs',
@@ -62,8 +84,10 @@ class AppRouter extends _$AppRouter {
       children: <AutoRoute>[
         RedirectRoute(path: '', redirectTo: 'home'),
         AutoRoute(page: HomeRoute.page, path: 'home'),
+        AutoRoute(page: ExploreRoute.page, path: 'explore'),
+        AutoRoute(page: CreateBookRoute.page, path: 'create'),
         AutoRoute(page: LibraryRoute.page, path: 'library'),
-        AutoRoute(page: MeRoute.page),
+        AutoRoute(page: MeRoute.page, path: 'me'),
       ],
     ),
   ];

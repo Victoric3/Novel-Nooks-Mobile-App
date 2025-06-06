@@ -9,7 +9,6 @@ import 'package:novelnooks/src/common/constants/dio_config.dart';
 import 'package:novelnooks/src/common/services/notification_service.dart';
 import 'package:novelnooks/src/common/theme/app_theme.dart';
 import 'package:novelnooks/src/common/widgets/notification_card.dart';
-import 'package:novelnooks/src/features/auth/blocs/auth_handler.dart';
 import 'package:novelnooks/src/features/auth/blocs/verify_code.dart';
 import 'package:novelnooks/src/features/auth/providers/user_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -544,7 +543,9 @@ class _MeScreenState extends ConsumerState<MeScreen>
           onChanged: (value) {
             ref
                 .read(currentAppThemeNotifierProvider.notifier)
-                .updateCurrentAppTheme(value);
+                .updateCurrentAppTheme(
+                  value ? CurrentAppTheme.dark : CurrentAppTheme.light,
+                );
           },
           activeColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
           activeTrackColor:
@@ -1833,183 +1834,200 @@ class _MeScreenState extends ConsumerState<MeScreen>
       backgroundColor: Colors.transparent,
       barrierColor: scrimColor,
       builder: (context) {
-        return FractionallySizedBox(
-          heightFactor: 0.4,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Container(
-              color: isDark ? AppColors.darkBg : Colors.white,
-              child: Column(
-                children: [
-                  // Header
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black12 : Colors.grey[50],
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isDark ? Colors.white10 : Colors.black12,
-                          width: 1,
+        return Material(
+          // Add Material widget here for proper theming
+          type: MaterialType.transparency,
+          child: FractionallySizedBox(
+            heightFactor: 0.4,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Container(
+                color: isDark ? AppColors.darkBg : Colors.white,
+                child: Column(
+                  children: [
+                    // Header
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.black12 : Colors.grey[50],
+                        border: Border(
+                          bottom: BorderSide(
+                            color: isDark ? Colors.white10 : Colors.black12,
+                            width: 1,
+                          ),
                         ),
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        // Drag handle
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-
-                        // Title row
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.logout,
-                              color:
-                                  isDark
-                                      ? AppColors.neonCyan
-                                      : AppColors.brandDeepGold,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Sign Out',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
+                      child: Column(
+                        children: [
+                          // Drag handle
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(2),
                               ),
                             ),
-                            const Spacer(),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                          ),
 
-                  // Content
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            MdiIcons.powerStandby,
-                            size: 64,
-                            color:
-                                isDark
-                                    ? Colors.red.shade300
-                                    : Colors.red.shade400,
-                          ),
-                          const SizedBox(height: 24),
-                          Text(
-                            'Are you sure you want to sign out?',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'You will need to sign in again to access your account.',
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black54,
-                            ),
-                            textAlign: TextAlign.center,
+                          // Title row
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.logout,
+                                color:
+                                    isDark
+                                        ? AppColors.neonCyan
+                                        : AppColors.brandDeepGold,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Sign Out',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                ),
+                              ),
+                              const Spacer(),
+                              IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () => Navigator.pop(context),
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  ),
 
-                  // Bottom buttons - fixed at bottom
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppColors.darkBg : Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, -2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              side: BorderSide(
-                                color:
-                                    isDark
-                                        ? AppColors.neonCyan
-                                        : AppColors.brandDeepGold,
-                              ),
-                            ),
-                            child: Text(
-                              'Cancel',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color:
-                                    isDark
-                                        ? AppColors.neonCyan
-                                        : AppColors.brandDeepGold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _signOut();
-                              Navigator.pop(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
+                    // Content
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              MdiIcons.powerStandby,
+                              size: 64,
+                              color:
                                   isDark
-                                      ? Colors.red.shade600
-                                      : Colors.red.shade500,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                                      ? Colors.red.shade300
+                                      : Colors.red.shade400,
                             ),
-                            child: const Text(
-                              'Sign Out',
+                            const SizedBox(height: 24),
+                            Text(
+                              'Are you sure you want to sign out?',
                               style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'You will need to sign in again to access your account.',
+                              style: TextStyle(
+                                color: isDark ? Colors.white70 : Colors.black54,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Bottom buttons - fixed at bottom
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkBg : Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, -2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                side: BorderSide(
+                                  color:
+                                      isDark
+                                          ? AppColors.neonCyan
+                                          : AppColors.brandDeepGold,
+                                ),
+                              ),
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      isDark
+                                          ? AppColors.neonCyan
+                                          : AppColors.brandDeepGold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () {
+                                // Close this dialog first
+                                Navigator.pop(context);
+                                // Then handle sign out
+                                _signOut();
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    isDark
+                                        ? Colors.red.shade600
+                                        : Colors.red.shade500,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                'Sign Out',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -2068,16 +2086,15 @@ class _MeScreenState extends ConsumerState<MeScreen>
 
   void _convertCoins(int amount) async {
     try {
-      final dio = ref.read(dioProvider);
-      final response = await dio.post(
+      final response = await DioConfig.dio?.post(
         '/premium/coinsToVouchers',
         data: {'coins': amount},
       );
 
-      if (response.statusCode == 200) {
+      if (response?.statusCode == 200) {
         ref.read(userProvider.notifier).refreshUser();
         NotificationService().showNotification(
-          message: response.data['message'] ?? 'Coins converted successfully',
+          message: response?.data['message'] ?? 'Coins converted successfully',
           type: NotificationType.success,
         );
       }
@@ -2095,370 +2112,438 @@ class _MeScreenState extends ConsumerState<MeScreen>
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder:
+            (context) => Center(
+              child: CircularProgressIndicator(
+                color:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.neonCyan
+                        : AppColors.brandDeepGold,
+              ),
+            ),
       );
 
-      // Use the auth handler to sign out
-      await ref.read(signInProvider).signOut(context, ref);
+      // Clear local storage tokens
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('token');
+      await prefs.remove('refreshToken');
 
-      // Navigate to sign in screen (this is handled in the signOut method)
+      // Clear Dio headers
+      DioConfig.dio?.options.headers.remove('Authorization');
+
+      // Clear user data from provider
+      await ref.read(userProvider.notifier).clearUser();
+
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.pop(context);
+
+        // Navigate to intro/auth screen
+        context.router.replaceAll([const AuthRoute()]);
+
+        // Show success notification
+        ref
+            .read(notificationServiceProvider)
+            .showNotification(
+              message: 'Successfully signed out',
+              type: NotificationType.success,
+              duration: const Duration(seconds: 3),
+            );
+      }
     } catch (e) {
       // Close loading indicator if it's still showing
       if (context.mounted) {
         Navigator.pop(context);
       }
 
-      NotificationService().showNotification(
-        message: 'Failed to sign out',
-        type: NotificationType.error,
-      );
+      // Show error notification
+      ref
+          .read(notificationServiceProvider)
+          .showNotification(
+            message: 'Failed to sign out: ${e.toString()}',
+            type: NotificationType.error,
+            duration: const Duration(seconds: 3),
+          );
     }
   }
 
-void _showScheduleCallModal(BuildContext context, bool isDark) {
-  final nameController = TextEditingController();
-  final emailController = TextEditingController();
-  final messageController = TextEditingController();
-  String selectedService = 'Account Help';
-  DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
-  TimeOfDay selectedTime = TimeOfDay.now();
+  void _showScheduleCallModal(BuildContext context, bool isDark) {
+    final nameController = TextEditingController();
+    final emailController = TextEditingController();
+    final messageController = TextEditingController();
+    String selectedService = 'Account Help';
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TimeOfDay selectedTime = TimeOfDay.now();
 
-  // Pre-fill with user data if available
-  final user = ref.read(userProvider).valueOrNull;
-  if (user != null) {
-    emailController.text = user.email;
-    nameController.text = "${user.firstname} ${user.lastname}";
-  }
+    // Pre-fill with user data if available
+    final user = ref.read(userProvider).valueOrNull;
+    if (user != null) {
+      emailController.text = user.email;
+      nameController.text = "${user.firstname} ${user.lastname}";
+    }
 
-  // Create a scrim color with proper opacity like the comment section
-  final scrimColor = Colors.black.withOpacity(0.5);
+    // Create a scrim color with proper opacity like the comment section
+    final scrimColor = Colors.black.withOpacity(0.5);
 
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    isDismissible: true,
-    enableDrag: true,
-    useRootNavigator: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: scrimColor,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) {
-        return FractionallySizedBox(
-          heightFactor: 0.85,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(16),
-            ),
-            child: Container(
-              color: isDark ? AppColors.darkBg : Colors.white,
-              child: Column(
-                children: [
-                  // Header with drag handle
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.black12 : Colors.grey[50],
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isDark ? Colors.white10 : Colors.black12,
-                          width: 1,
-                        ),
-                      ),
-                    ),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: scrimColor,
+      builder:
+          (context) => StatefulBuilder(
+            builder: (context, setState) {
+              return FractionallySizedBox(
+                heightFactor: 0.85,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: Container(
+                    color: isDark ? AppColors.darkBg : Colors.white,
                     child: Column(
                       children: [
-                        // Drag handle
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.only(bottom: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(2),
+                        // Header with drag handle
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 20,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.black12 : Colors.grey[50],
+                            border: Border(
+                              bottom: BorderSide(
+                                color: isDark ? Colors.white10 : Colors.black12,
+                                width: 1,
+                              ),
                             ),
+                          ),
+                          child: Column(
+                            children: [
+                              // Drag handle
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.3),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+
+                              // Title row
+                              Row(
+                                children: [
+                                  Icon(
+                                    MdiIcons.phoneInTalkOutline,
+                                    color:
+                                        isDark
+                                            ? AppColors.neonCyan
+                                            : AppColors.brandDeepGold,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Schedule a Call',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          isDark
+                                              ? Colors.white
+                                              : Colors.black87,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  IconButton(
+                                    icon: const Icon(Icons.close),
+                                    color:
+                                        isDark
+                                            ? Colors.white70
+                                            : Colors.black54,
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
 
-                        // Title row
-                        Row(
-                          children: [
-                            Icon(
-                              MdiIcons.phoneInTalkOutline,
-                              color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                              size: 24,
+                        // Scrollable content
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Description
+                                Text(
+                                  'Book a call with our support team to get personalized help with your account or technical issues.',
+                                  style: TextStyle(
+                                    color:
+                                        isDark
+                                            ? Colors.white70
+                                            : Colors.black54,
+                                    fontSize: 14,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+
+                                // Name field
+                                Text(
+                                  'Your Name',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: nameController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter your full name',
+                                    prefixIcon: Icon(Icons.person_outline),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Email field
+                                Text(
+                                  'Email Address',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: emailController,
+                                  keyboardType: TextInputType.emailAddress,
+                                  decoration: InputDecoration(
+                                    hintText: 'Your email address',
+                                    prefixIcon: Icon(Icons.email_outlined),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Service Type
+                                Text(
+                                  'Service Type',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: Colors.grey.withOpacity(0.5),
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      isExpanded: true,
+                                      value: selectedService,
+                                      items:
+                                          [
+                                            'Account Help',
+                                            'Technical Support',
+                                            'Billing Issues',
+                                            'Author Support',
+                                            'Other',
+                                          ].map((String value) {
+                                            return DropdownMenuItem<String>(
+                                              value: value,
+                                              child: Text(value),
+                                            );
+                                          }).toList(),
+                                      onChanged: (value) {
+                                        setState(() {
+                                          selectedService = value!;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Date & Time selection
+                                Text(
+                                  'Preferred Date & Time',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                InkWell(
+                                  onTap: () async {
+                                    final newDate = await showDatePicker(
+                                      context: context,
+                                      initialDate: selectedDate,
+                                      firstDate: DateTime.now(),
+                                      lastDate: DateTime.now().add(
+                                        const Duration(days: 30),
+                                      ),
+                                      builder: (context, child) {
+                                        return Theme(
+                                          data: Theme.of(context).copyWith(
+                                            colorScheme: ColorScheme.light(
+                                              primary:
+                                                  isDark
+                                                      ? AppColors.neonCyan
+                                                      : AppColors.brandDeepGold,
+                                            ),
+                                          ),
+                                          child: child!,
+                                        );
+                                      },
+                                    );
+
+                                    if (newDate != null) {
+                                      setState(() {
+                                        selectedDate = newDate;
+                                      });
+
+                                      // Show time picker after date is selected
+                                      final newTime = await showTimePicker(
+                                        context: context,
+                                        initialTime: selectedTime,
+                                        builder: (context, child) {
+                                          return Theme(
+                                            data: Theme.of(context).copyWith(
+                                              colorScheme: ColorScheme.light(
+                                                primary:
+                                                    isDark
+                                                        ? AppColors.neonCyan
+                                                        : AppColors
+                                                            .brandDeepGold,
+                                              ),
+                                            ),
+                                            child: child!,
+                                          );
+                                        },
+                                      );
+
+                                      if (newTime != null) {
+                                        setState(() {
+                                          selectedTime = newTime;
+                                        });
+                                      }
+                                    }
+                                  },
+                                  child: InputDecorator(
+                                    decoration: InputDecoration(
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      prefixIcon: Icon(Icons.calendar_today),
+                                    ),
+                                    child: Text(
+                                      '${selectedDate.day}/${selectedDate.month}/${selectedDate.year} at ${selectedTime.format(context)}',
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 20),
+
+                                // Message field
+                                Text(
+                                  'Message',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: messageController,
+                                  maxLines: 4,
+                                  decoration: InputDecoration(
+                                    hintText: 'Describe your issue briefly',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+
+                                // Button moved inside the scrollable area
+                                const SizedBox(height: 28),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 56,
+                                  child: ElevatedButton(
+                                    onPressed:
+                                        () => _submitScheduleCallRequest(
+                                          context,
+                                          nameController.text,
+                                          emailController.text,
+                                          messageController.text,
+                                          selectedDate,
+                                          selectedTime,
+                                          "", // Empty budget since removed
+                                          selectedService,
+                                        ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          isDark
+                                              ? AppColors.neonCyan
+                                              : AppColors.brandDeepGold,
+                                      foregroundColor:
+                                          isDark ? Colors.black : Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      'Schedule Call',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                // Add extra padding at the bottom for better spacing
+                                const SizedBox(height: 20),
+                              ],
                             ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Schedule a Call',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDark ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                            const Spacer(),
-                            IconButton(
-                              icon: const Icon(Icons.close),
-                              color: isDark ? Colors.white70 : Colors.black54,
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-
-                  // Scrollable content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Description
-                          Text(
-                            'Book a call with our support team to get personalized help with your account or technical issues.',
-                            style: TextStyle(
-                              color: isDark ? Colors.white70 : Colors.black54,
-                              fontSize: 14,
-                            ),
-                          ),
-                          
-                          const SizedBox(height: 24),
-
-                          // Name field
-                          Text(
-                            'Your Name',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: nameController,
-                            decoration: InputDecoration(
-                              hintText: 'Enter your full name',
-                              prefixIcon: Icon(Icons.person_outline),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Email field
-                          Text(
-                            'Email Address',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            decoration: InputDecoration(
-                              hintText: 'Your email address',
-                              prefixIcon: Icon(Icons.email_outlined),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Service Type
-                          Text(
-                            'Service Type',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.grey.withOpacity(0.5),
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: DropdownButtonHideUnderline(
-                              child: DropdownButton<String>(
-                                isExpanded: true,
-                                value: selectedService,
-                                items: [
-                                  'Account Help',
-                                  'Technical Support',
-                                  'Billing Issues',
-                                  'Author Support',
-                                  'Other',
-                                ].map((String value) {
-                                  return DropdownMenuItem<String>(
-                                    value: value,
-                                    child: Text(value),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedService = value!;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Date & Time selection
-                          Text(
-                            'Preferred Date & Time',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          InkWell(
-                            onTap: () async {
-                              final newDate = await showDatePicker(
-                                context: context,
-                                initialDate: selectedDate,
-                                firstDate: DateTime.now(),
-                                lastDate: DateTime.now().add(
-                                  const Duration(days: 30),
-                                ),
-                                builder: (context, child) {
-                                  return Theme(
-                                    data: Theme.of(context).copyWith(
-                                      colorScheme: ColorScheme.light(
-                                        primary: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                                      ),
-                                    ),
-                                    child: child!,
-                                  );
-                                },
-                              );
-
-                              if (newDate != null) {
-                                setState(() {
-                                  selectedDate = newDate;
-                                });
-
-                                // Show time picker after date is selected
-                                final newTime = await showTimePicker(
-                                  context: context,
-                                  initialTime: selectedTime,
-                                  builder: (context, child) {
-                                    return Theme(
-                                      data: Theme.of(context).copyWith(
-                                        colorScheme: ColorScheme.light(
-                                          primary: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                                        ),
-                                      ),
-                                      child: child!,
-                                    );
-                                  },
-                                );
-
-                                if (newTime != null) {
-                                  setState(() {
-                                    selectedTime = newTime;
-                                  });
-                                }
-                              }
-                            },
-                            child: InputDecorator(
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                prefixIcon: Icon(Icons.calendar_today),
-                              ),
-                              child: Text(
-                                '${selectedDate.day}/${selectedDate.month}/${selectedDate.year} at ${selectedTime.format(context)}',
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Message field
-                          Text(
-                            'Message',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: messageController,
-                            maxLines: 4,
-                            decoration: InputDecoration(
-                              hintText: 'Describe your issue briefly',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-
-                          // Button moved inside the scrollable area
-                          const SizedBox(height: 28),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed: () => _submitScheduleCallRequest(
-                                context,
-                                nameController.text,
-                                emailController.text,
-                                messageController.text,
-                                selectedDate,
-                                selectedTime,
-                                "", // Empty budget since removed
-                                selectedService,
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
-                                foregroundColor: isDark ? Colors.black : Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Schedule Call',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                          // Add extra padding at the bottom for better spacing
-                          const SizedBox(height: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        );
-      },
-    ),
-  );
-}
+    );
+  }
 
   Future<void> _submitScheduleCallRequest(
     BuildContext context,
@@ -2496,8 +2581,7 @@ void _showScheduleCallModal(BuildContext context, bool isDark) {
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
 
-      final dio = ref.read(dioProvider);
-      final response = await dio.post(
+      final response = await DioConfig.dio?.post(
         '/call/scheduleCall',
         data: {
           'name': name,
@@ -2515,7 +2599,7 @@ void _showScheduleCallModal(BuildContext context, bool isDark) {
         Navigator.pop(context); // Close form modal
       }
 
-      if (response.statusCode == 200) {
+      if (response?.statusCode == 200) {
         NotificationService().showNotification(
           message:
               'Your call has been scheduled successfully. We will contact you soon.',

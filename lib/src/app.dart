@@ -28,7 +28,7 @@ class MyApp extends ConsumerWidget {
           AutoRouteObserver(),
         ],
       ),
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: false, 
       title: appName,
       builder: (context, child) {
         // Set up lifecycle observer
@@ -38,6 +38,7 @@ class MyApp extends ConsumerWidget {
         return Stack(
           children: [
             SessionListener(child: child ?? const SizedBox.shrink()),
+            // Show notifications
             Consumer(
               builder: (context, ref, _) {
                 final notifications = ref.watch(notificationServiceProvider).notifications;

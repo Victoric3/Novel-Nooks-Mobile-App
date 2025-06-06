@@ -21,6 +21,12 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthScreen(),
       );
     },
+    CreateBookRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const CreateBookScreen(),
+      );
+    },
     EbookDetailRoute.name: (routeData) {
       final args = routeData.argsAs<EbookDetailRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -31,6 +37,22 @@ abstract class _$AppRouter extends RootStackRouter {
           slug: args.slug,
           ebook: args.ebook,
         ),
+      );
+    },
+    EditBookRoute.name: (routeData) {
+      final args = routeData.argsAs<EditBookRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: EditBookScreen(
+          key: args.key,
+          ebookToEdit: args.ebookToEdit,
+        ),
+      );
+    },
+    ExploreRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const ExploreScreen(),
       );
     },
     HomeRoute.name: (routeData) {
@@ -55,6 +77,12 @@ abstract class _$AppRouter extends RootStackRouter {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
         child: const MeScreen(),
+      );
+    },
+    NotificationsRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const NotificationsScreen(),
       );
     },
     ReaderRoute.name: (routeData) {
@@ -144,6 +172,20 @@ class AuthRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [CreateBookScreen]
+class CreateBookRoute extends PageRouteInfo<void> {
+  const CreateBookRoute({List<PageRouteInfo>? children})
+      : super(
+          CreateBookRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'CreateBookRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
 /// [EbookDetailScreen]
 class EbookDetailRoute extends PageRouteInfo<EbookDetailRouteArgs> {
   EbookDetailRoute({
@@ -189,6 +231,58 @@ class EbookDetailRouteArgs {
   String toString() {
     return 'EbookDetailRouteArgs{key: $key, id: $id, slug: $slug, ebook: $ebook}';
   }
+}
+
+/// generated route for
+/// [EditBookScreen]
+class EditBookRoute extends PageRouteInfo<EditBookRouteArgs> {
+  EditBookRoute({
+    Key? key,
+    required EbookModel ebookToEdit,
+    List<PageRouteInfo>? children,
+  }) : super(
+          EditBookRoute.name,
+          args: EditBookRouteArgs(
+            key: key,
+            ebookToEdit: ebookToEdit,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'EditBookRoute';
+
+  static const PageInfo<EditBookRouteArgs> page =
+      PageInfo<EditBookRouteArgs>(name);
+}
+
+class EditBookRouteArgs {
+  const EditBookRouteArgs({
+    this.key,
+    required this.ebookToEdit,
+  });
+
+  final Key? key;
+
+  final EbookModel ebookToEdit;
+
+  @override
+  String toString() {
+    return 'EditBookRouteArgs{key: $key, ebookToEdit: $ebookToEdit}';
+  }
+}
+
+/// generated route for
+/// [ExploreScreen]
+class ExploreRoute extends PageRouteInfo<void> {
+  const ExploreRoute({List<PageRouteInfo>? children})
+      : super(
+          ExploreRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'ExploreRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
 }
 
 /// generated route for
@@ -243,6 +337,20 @@ class MeRoute extends PageRouteInfo<void> {
         );
 
   static const String name = 'MeRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [NotificationsScreen]
+class NotificationsRoute extends PageRouteInfo<void> {
+  const NotificationsRoute({List<PageRouteInfo>? children})
+      : super(
+          NotificationsRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'NotificationsRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }

@@ -12,14 +12,19 @@ class CurrentAppThemeNotifier extends _$CurrentAppThemeNotifier {
 
   CurrentAppThemeNotifier() : super();
 
-  Future<void> updateCurrentAppTheme(bool isDarkMode) async {
-    final success =
-        await _currentAppThemeService.setCurrentAppTheme(isDarkMode);
-
+  // Add method to change to system theme
+  Future<void> useSystemTheme() async {
+    final success = await _currentAppThemeService.setCurrentAppTheme(CurrentAppTheme.system);
     if (success) {
-      state = AsyncValue.data(
-        isDarkMode ? CurrentAppTheme.dark : CurrentAppTheme.light,
-      );
+      state = const AsyncValue.data(CurrentAppTheme.system);
+    }
+  }
+
+  // Update this method to accept CurrentAppTheme instead of bool
+  Future<void> updateCurrentAppTheme(CurrentAppTheme theme) async {
+    final success = await _currentAppThemeService.setCurrentAppTheme(theme);
+    if (success) {
+      state = AsyncValue.data(theme);
     }
   }
 
@@ -32,7 +37,8 @@ class CurrentAppThemeNotifier extends _$CurrentAppThemeNotifier {
 
 enum CurrentAppTheme {
   light(ThemeMode.light),
-  dark(ThemeMode.dark);
+  dark(ThemeMode.dark),
+  system(ThemeMode.system);  // Add this line
 
   final ThemeMode themeMode;
   const CurrentAppTheme(this.themeMode);

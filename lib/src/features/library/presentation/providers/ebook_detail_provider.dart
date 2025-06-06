@@ -298,6 +298,13 @@ class EbookDetailNotifier extends StateNotifier<EbookDetailState> {
   void setCurrentEbook (EbookModel ebook) {
       state = state.copyWith(ebook: ebook);
   }
+
+  void updateFeaturedStatus(bool isFeatured) {
+    if (state.ebook == null) return;
+    
+    final updatedEbook = state.ebook!.copyWith(isFeatured: isFeatured);
+    state = state.copyWith(ebook: updatedEbook);
+  }
 }
 
 final ebookDetailProvider = StateNotifierProvider.autoDispose<EbookDetailNotifier, EbookDetailState>((ref) {

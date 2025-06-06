@@ -10,6 +10,7 @@ import 'package:novelnooks/src/common/common.dart';
 import 'package:novelnooks/src/common/constants/dio_config.dart';
 import 'package:novelnooks/src/common/constants/global_state.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/user_provider.dart';
 
 
@@ -352,21 +353,38 @@ class SignInState extends ChangeNotifier {
   }
 
   Future<void> signOut(BuildContext context, WidgetRef ref) async {
+  try {
+    // Try to call the logout API endpoint
     try {
-      // Call your API to invalidate token
-      // final response = 
       await DioConfig.dio?.post('/user/logout');
-      
-      // Clear user data locally
-      await ref.read(userProvider.notifier).clearUser();
-      
-      if (context.mounted) {
-        context.router.replace(const AuthRoute());
-      }
-    } catch (error) {
-      // Handle error
+    } catch (e) {
+      print('API logout failed: $e');
+      // Continue with local logout even if API call fails
     }
+    
+    // Clear local storage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('refreshToken');
+    await prefs.remove('userData');
+    
+    // Clear Dio headers
+    DioConfig.dio?.options.headers.remove('Authorization');
+    
+    // Clear user data from provider
+    await ref.read(userProvider.notifier).clearUser();
+    
+    // Navigate to auth screen
+    if (context.mounted) {
+      context.router.replaceAll([const AuthRoute()]);
+    }
+    
+    return;
+  } catch (error) {
+    print('Error during sign out: $error');
+    rethrow; // Let the calling method handle the error
   }
+}
 }
 
 // Define the provider

@@ -105,20 +105,12 @@ class _NotificationCardState extends State<NotificationCard> with SingleTickerPr
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: _getBorderColor(context).withOpacity(0.1),
+                      color: _getBorderColor(context).withOpacity(0.4),
                       blurRadius: 12,
                       spreadRadius: 2,
                       offset: const Offset(0, 4),
                     ),
                   ],
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      _getBackgroundColor(context),
-                      _getBackgroundColor(context).withOpacity(0.8),
-                    ],
-                  ),
                 ),
                 child: Column(
                   children: [
@@ -195,14 +187,14 @@ class _NotificationCardState extends State<NotificationCard> with SingleTickerPr
     switch (widget.type) {
       case NotificationType.success:
         return isDark 
-            ? AppColors.neonCyan.withOpacity(0.08) 
-            : AppColors.brandDeepGold.withOpacity(0.05);
+            ? AppColors.neonCyan.withOpacity(0.9) 
+            : AppColors.brandDeepGold.withOpacity(0.9);
       case NotificationType.error:
-        return Colors.red.withOpacity(isDark ? 0.08 : 0.05);
+        return Colors.red.withOpacity(isDark ? 0.9 : 0.9);
       case NotificationType.warning:
-        return Colors.orange.withOpacity(isDark ? 0.08 : 0.05);
+        return Colors.orange.withOpacity(isDark ? 0.9 : 0.9);
       case NotificationType.info:
-        return Colors.blue.withOpacity(isDark ? 0.08 : 0.05);
+        return Colors.blue.withOpacity(isDark ? 0.9 : 0.9);
     }
   }
 

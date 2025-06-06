@@ -38,7 +38,7 @@ class AppColors {
 class AppTheme {
   static ThemeData get lightTheme => ThemeData(
         primaryColor: AppColors.brandOrange,
-        colorScheme: ColorScheme.light(
+        colorScheme: const ColorScheme.light(
           primary: AppColors.brandOrange,
           secondary: AppColors.brandDeepOrange,
           tertiary: AppColors.greenLime,
@@ -59,7 +59,7 @@ class AppTheme {
 
   static ThemeData get darkTheme => ThemeData(
         primaryColor: AppColors.neonCyan,
-        colorScheme: ColorScheme.dark(
+        colorScheme: const ColorScheme.dark(
           primary: AppColors.neonCyan,
           secondary: AppColors.neonPurple,
           background: AppColors.darkBg,

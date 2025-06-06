@@ -10,6 +10,7 @@ import 'package:novelnooks/src/features/auth/providers/user_provider.dart';
 import 'package:novelnooks/src/features/library/data/models/ebook_model.dart';
 import 'package:novelnooks/src/features/library/presentation/providers/ebook_detail_provider.dart';
 import 'package:novelnooks/src/features/library/presentation/providers/library_provider.dart';
+import 'package:novelnooks/src/features/notifications/presentation/providers/notification_providers.dart';
 
 // Scroll controller provider
 final homeScrollControllerProvider = Provider((ref) {
@@ -248,6 +249,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
               SliverAppBar(
                 pinned: true,
                 floating: false,
+                automaticallyImplyLeading: false,
                 backgroundColor: isDark ? AppColors.darkBg : Colors.white,
                 elevation: 0,
                 title: Row(
@@ -319,21 +321,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with AutomaticKeepAlive
                                 color: isDark ? AppColors.neonCyan : AppColors.brandDeepGold,
                                 size: 22,
                               ),
-                              onPressed: () {},
+                              onPressed: () {
+                                context.router.push(const NotificationsRoute());
+                              },
                               constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                               padding: EdgeInsets.zero,
                             ),
-                            Positioned(
-                              top: 6,
-                              right: 6,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: const BoxDecoration(
-                                  color: Colors.red,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
+                            Consumer(
+                              builder: (context, ref, child) {
+                                final unreadCount = ref.watch(unreadNotificationsCountProvider);
+                                if (unreadCount <= 0) {
+                                  return const SizedBox.shrink();
+                                }
+                                
+                                return Positioned(
+                                  top: 6,
+                                  right: 6,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      unreadCount > 9 ? '9+' : '$unreadCount',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 8,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ],
                         ),

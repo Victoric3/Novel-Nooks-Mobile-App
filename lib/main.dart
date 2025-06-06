@@ -8,6 +8,7 @@ import 'package:novelnooks/src/common/common.dart';
 import 'package:novelnooks/src/common/constants/dio_config.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:novelnooks/src/features/notifications/presentation/providers/notification_providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -93,12 +94,19 @@ void main() async {
           sharedPreferencesProvider.overrideWithValue(prefs),
           firebaseMessagingServiceProvider.overrideWithValue(messagingService),
         ],
+        observers: [RiverpodObserver()],
         child: MyApp(),
       ),
     );
-  } catch (e, stackTrace) {
-    print('Startup error: $e');
-    print('Stack trace: $stackTrace');
+
+    // Refresh notification count after app launches
+    Future.delayed(const Duration(seconds: 2), () {
+      final container = ProviderContainer();
+      container.read(notificationsProvider.notifier).refreshUnreadCount();
+    });
+    
+  } catch (e) {
+    print('Application error: $e');
   }
 }
 

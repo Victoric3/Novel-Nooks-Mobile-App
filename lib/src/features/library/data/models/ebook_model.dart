@@ -23,6 +23,7 @@ class EbookModel extends Equatable {
   final List<String>? contentTitles;
   final int contentCount;
   final double pricePerChapter;
+  final bool isFeatured;
 
   // Derived fields (client-side or optional)
   final bool? isLikedByCurrentUser;
@@ -55,6 +56,7 @@ class EbookModel extends Equatable {
     this.isInReadingList,
     this.contentCount = 0,
     this.pricePerChapter = 0.0,
+    this.isFeatured = false,
   });
 
   // copyWith method for easy updates
@@ -84,6 +86,7 @@ class EbookModel extends Equatable {
     bool? isInReadingList,
     int? contentCount,
     double? pricePerChapter,
+    bool? isFeatured,
   }) {
     return EbookModel(
       id: id ?? this.id,
@@ -111,6 +114,7 @@ class EbookModel extends Equatable {
       isInReadingList: isInReadingList ?? this.isInReadingList,
       contentCount: contentCount ?? this.contentCount,
       pricePerChapter: pricePerChapter ?? this.pricePerChapter,
+      isFeatured: isFeatured ?? this.isFeatured,
     );
   }
 
@@ -178,6 +182,7 @@ class EbookModel extends Equatable {
       isInReadingList: json['isInReadingList'] ?? false,
       contentCount: json['contentCount'] ?? 0,
       pricePerChapter: (json['pricePerChapter'] ?? 0.0).toDouble(),
+      isFeatured: json['isFeatured'] ?? false,
     );
   }
 
@@ -208,6 +213,7 @@ class EbookModel extends Equatable {
         isInReadingList,
         contentCount,
         pricePerChapter,
+        isFeatured,
       ];
 }
 
